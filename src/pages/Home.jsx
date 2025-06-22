@@ -1,17 +1,19 @@
 import React, { useEffect, useRef } from "react";
+import { setStationNear, getStationNear } from "../api/map";
 
 export default function Home() {
   // 전역 변수
-  const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조
-  const mapInstance = useRef(null); // 지도 객체
+  const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조용
+  const mapInstance = useRef(null); // 생성된 지도 객체(Tmapv2.Map)를 저장
   const userMarkerRef = useRef(null); // 사용자 위치 마커 객체
+  const markersRef = useRef([]); // 마커들을 저장할 ref 배열
   // 0. 기본 중심 좌표 (// 실패 시 centerLat, centerLon은 기본값 유지)
   const centerLatRef = useRef(37.504198); // 역삼역 위도
   const centerLonRef = useRef(127.04894); // 역삼역 경도
 
   // 앱 실행
   useEffect(() => {
-    initTmap();
+    initTmap({ mapInstance, markersRef });
   }, []);
 
   const initTmap = async () => {
@@ -37,6 +39,15 @@ export default function Home() {
 
     // 3. 최초 사용자 위치 마커 생성, 이동시 마커 움직임
     updateUserMarker(centerLatRef.current, centerLonRef.current);
+    // 4. 프론트에서 현재 위치 전송 + 근처 충전소 세팅 함수
+    await setStationNear(centerLatRef.current, centerLonRef.current);
+    // 5. 저장 후 즉시 지도에 뿌리기 (추가)
+    await getStationNear(
+      centerLatRef.current,
+      centerLonRef.current,
+      mapInstance,
+      markersRef
+    );
   };
 
   // ***현재 위치 구하는 함수***
