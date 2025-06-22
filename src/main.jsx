@@ -2,6 +2,7 @@ import React from "react";
 import ReactDom from "react-dom/client";
 // import './index.css'
 import App from "./App.jsx";
+import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 
 // 1. ReactDOM.createRoot(...).render(...)는 #root에 React를 연결합니다.
