@@ -1,0 +1,39 @@
+.filter-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  padding: 8px 12px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.filter-panel {
+  position: absolute;
+  top: 50px;
+  left: 10px;
+  background-color: white;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  padding: 15px;
+  z-index: 999;
+  width: 240px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-panel label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+#map_div {
+  position: relative;
+  z-index: 0;
+}
+
+.map-container {
+  position: relative;
+}

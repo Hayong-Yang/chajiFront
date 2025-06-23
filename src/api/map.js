@@ -26,7 +26,8 @@ export const getStationNear = async (
   centerLon,
   mapInstance,
   markersRef,
-  setSelectedStation
+  setSelectedStation,
+  filterOptions = {}
 ) => {
   try {
     const response = await fetch("/api/station/getStationNear", {
@@ -34,7 +35,11 @@ export const getStationNear = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ lat: centerLat, lon: centerLon }),
+      body: JSON.stringify({
+        lat: centerLat,
+        lon: centerLon,
+        ...filterOptions,
+      }),
     });
 
     if (!response.ok) {
@@ -80,7 +85,8 @@ export const registerMapCenterListener = (
   getStationNear,
   mapInstanceRef,
   markersRef,
-  setSelectedStation
+  setSelectedStation,
+  filterOptionsRef
 ) => {
   let debounceTimer = null;
 
@@ -101,7 +107,8 @@ export const registerMapCenterListener = (
         centerLon,
         mapInstanceRef,
         markersRef,
-        setSelectedStation
+        setSelectedStation,
+        filterOptionsRef.current
       );
     }, 300);
   };
@@ -117,7 +124,8 @@ export const trackUserMovement = (
   setStationNear,
   getStationNear,
   markersRef,
-  setSelectedStation
+  setSelectedStation,
+  filterOptionsRef
 ) => {
   const lastUserUpdateTimeRef = { current: 0 }; // 로컬 ref 대체
   const USER_UPDATE_INTERVAL = 10000; // 10초
@@ -158,7 +166,8 @@ export const trackUserMovement = (
             newLon,
             mapInstanceRef,
             markersRef,
-            setSelectedStation
+            setSelectedStation,
+            filterOptionsRef.current
           );
         } else {
           console.log("사용자 위치 변경: 서버 요청 대기 중...");
