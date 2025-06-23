@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
+import RecommendRoute from "./pages/RecomendRoute";
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/home" />} />
       <Route path="/home" element={<Home />} />
+      <Route path="/recommendRoute" element={<RecommendRoute />} />
     </Routes>
   );
 }
