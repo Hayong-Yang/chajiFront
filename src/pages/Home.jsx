@@ -11,6 +11,189 @@ import "./home.css";
 // === 충전 속도 옵션 배열 ===
 const outputOptions = [0, 50, 100, 150, 200, 250, 300, 350];
 
+// === 충전사업자 옵션 배열 ===  // 수정: providerOptions 추가
+const providerOptions = [
+  { code: "AC", label: "아우토크립트" },
+  { code: "AH", label: "아하" },
+  { code: "AL", label: "아론" },
+  { code: "AM", label: "아마노코리아" },
+  { code: "AP", label: "애플망고" },
+  { code: "BA", label: "부안군" },
+  { code: "BE", label: "브라이트에너지파트너스" },
+  { code: "BG", label: "비긴스" },
+  { code: "BK", label: "비케이에너지" },
+  { code: "BN", label: "블루네트웍스" },
+  { code: "BP", label: "차밥스" },
+  { code: "BS", label: "보스시큐리티" },
+  { code: "BT", label: "보타리에너지" },
+  { code: "CA", label: "씨에스테크놀로지" },
+  { code: "CB", label: "참빛이브이씨" },
+  { code: "CC", label: "코콤" },
+  { code: "CG", label: "서울씨엔지" },
+  { code: "CH", label: "채움모빌리티" },
+  { code: "CI", label: "쿨사인" },
+  { code: "CN", label: "에바씨엔피" },
+  { code: "CO", label: "한전케이디엔" },
+  { code: "CP", label: "캐스트프로" },
+  { code: "CR", label: "크로커스" },
+  { code: "CS", label: "한국EV충전서비스센터" },
+  { code: "CT", label: "씨티카" },
+  { code: "CU", label: "씨어스" },
+  { code: "CV", label: "채비" },
+  { code: "DE", label: "대구공공시설관리공단" },
+  { code: "DG", label: "대구시" },
+  { code: "DL", label: "딜라이브" },
+  { code: "DO", label: "대한송유관공사" },
+  { code: "DP", label: "대유플러스" },
+  { code: "DR", label: "두루스코이브이" },
+  { code: "DS", label: "대선" },
+  { code: "DY", label: "동양이엔피" },
+  { code: "E0", label: "에너지플러스" },
+  { code: "EA", label: "에바" },
+  { code: "EB", label: "일렉트리" },
+  { code: "EC", label: "이지차저" },
+  { code: "EE", label: "이마트" },
+  { code: "EG", label: "에너지파트너즈" },
+  { code: "EH", label: "이앤에이치에너지" },
+  { code: "EK", label: "이노케이텍" },
+  { code: "EL", label: "엔라이튼" },
+  { code: "EM", label: "evmost" },
+  { code: "EN", label: "이엔" },
+  { code: "EO", label: "E1" },
+  { code: "EP", label: "이카플러그" },
+  { code: "ER", label: "이엘일렉트릭" },
+  { code: "ES", label: "이테스" },
+  { code: "ET", label: "이씨티" },
+  { code: "EV", label: "에버온" },
+  { code: "EZ", label: "차지인" },
+  { code: "FE", label: "에프이씨" },
+  { code: "FT", label: "포티투닷" },
+  { code: "G1", label: "광주시" },
+  { code: "G2", label: "광주시" },
+  { code: "GD", label: "그린도트" },
+  { code: "GE", label: "그린전력" },
+  { code: "GG", label: "강진군" },
+  { code: "GN", label: "지에스커넥트" },
+  { code: "GO", label: "유한회사 골드에너지" },
+  { code: "GP", label: "군포시" },
+  { code: "GR", label: "그리드위즈" },
+  { code: "GS", label: "GS칼텍스" },
+  { code: "HB", label: "에이치엘비생명과학" },
+  { code: "HD", label: "현대자동차" },
+  { code: "HE", label: "한국전기차충전서비스" },
+  { code: "HL", label: "에이치엘비일렉" },
+  { code: "HM", label: "휴맥스이브이" },
+  { code: "HP", label: "해피차지" },
+  { code: "HR", label: "한국홈충전" },
+  { code: "HS", label: "홈앤서비스" },
+  { code: "HW", label: "한화솔루션" },
+  { code: "HY", label: "현대엔지니어링" },
+  { code: "IC", label: "인천국제공항공사" },
+  { code: "IK", label: "익산시" },
+  { code: "IM", label: "아이마켓코리아" },
+  { code: "IN", label: "신세계아이앤씨" },
+  { code: "IO", label: "아이온커뮤니케이션즈" },
+  { code: "IV", label: "인큐버스" },
+  { code: "JA", label: "이브이시스" },
+  { code: "JC", label: "제주에너지공사" },
+  { code: "JD", label: "제주도청" },
+  { code: "JE", label: "제주전기자동차서비스" },
+  { code: "JH", label: "종하아이앤씨" },
+  { code: "JJ", label: "전주시" },
+  { code: "JN", label: "제이앤씨플랜" },
+  { code: "JT", label: "제주테크노파크" },
+  { code: "JU", label: "정읍시" },
+  { code: "KA", label: "기아자동차" },
+  { code: "KC", label: "한국컴퓨터" },
+  { code: "KE", label: "한국전기차인프라기술" },
+  { code: "KG", label: "KH에너지" },
+  { code: "KH", label: "김해시" },
+  { code: "KI", label: "기아자동차" },
+  { code: "KJ", label: "순천시" },
+  { code: "KL", label: "클린일렉스" },
+  { code: "KM", label: "카카오모빌리티" },
+  { code: "KN", label: "한국환경공단" },
+  { code: "KO", label: "이브이파트너스" },
+  { code: "KP", label: "한국전력" },
+  { code: "KR", label: "이브이씨코리아" },
+  { code: "KS", label: "한국전기차솔루션" },
+  { code: "KT", label: "케이티" },
+  { code: "KU", label: "한국충전연합" },
+  { code: "L3", label: "엘쓰리일렉트릭파워" },
+  { code: "LC", label: "롯데건설" },
+  { code: "LD", label: "롯데이노베이트" },
+  { code: "LH", label: "LG유플러스 볼트업(플러그인)" },
+  { code: "LI", label: "엘에스이링크" },
+  { code: "LT", label: "광성계측기" },
+  { code: "LU", label: "LG유플러스 볼트업" },
+  { code: "MA", label: "맥플러스" },
+  { code: "ME", label: "환경부" },
+  { code: "MO", label: "매니지온" },
+  { code: "MR", label: "미래씨앤엘" },
+  { code: "MS", label: "미래에스디" },
+  { code: "MT", label: "모던텍" },
+  { code: "MV", label: "메가볼트" },
+  { code: "NB", label: "엔비플러스" },
+  { code: "NE", label: "에너넷" },
+  { code: "NH", label: "농협경제지주 신재생에너지센터" },
+  { code: "NJ", label: "나주시" },
+  { code: "NN", label: "이브이네스트" },
+  { code: "NS", label: "뉴텍솔루션" },
+  { code: "NT", label: "한국전자금융" },
+  { code: "NX", label: "넥씽" },
+  { code: "OB", label: "현대오일뱅크" },
+  { code: "PA", label: "이브이페이" },
+  { code: "PC", label: "파킹클라우드" },
+  { code: "PE", label: "피앤이시스템즈" },
+  { code: "PI", label: "GS차지비" },
+  { code: "PK", label: "펌프킨" },
+  { code: "PL", label: "플러그링크" },
+  { code: "PM", label: "피라인모터스" },
+  { code: "PS", label: "이브이파킹서비스" },
+  { code: "PW", label: "파워큐브" },
+  { code: "RE", label: "레드이엔지" },
+  { code: "RS", label: "리셀파워" },
+  { code: "S1", label: "에스이피" },
+  { code: "SA", label: "설악에너텍" },
+  { code: "SB", label: "소프트베리" },
+  { code: "SC", label: "삼척시" },
+  { code: "SD", label: "스칼라데이터" },
+  { code: "SE", label: "서울시" },
+  { code: "SF", label: "스타코프" },
+  { code: "SG", label: "SK시그넷" },
+  { code: "SH", label: "에스에이치에너지" },
+  { code: "SJ", label: "세종시" },
+  { code: "SK", label: "SK에너지" },
+  { code: "SL", label: "에스에스기전" },
+  { code: "SM", label: "성민기업" },
+  { code: "SN", label: "서울에너지공사" },
+  { code: "SO", label: "선광시스템" },
+  { code: "SP", label: "스마트포트테크놀로지" },
+  { code: "SR", label: "SK렌터카" },
+  { code: "SS", label: "투이스이브이씨" },
+  { code: "ST", label: "SK일렉링크" },
+  { code: "SU", label: "순천시 체육시설관리소" },
+  { code: "SZ", label: "SG생활안전" },
+  { code: "TB", label: "태백시" },
+  { code: "TD", label: "타디스테크놀로지" },
+  { code: "TE", label: "테슬라" },
+  { code: "TH", label: "태현교통" },
+  { code: "TL", label: "티엘컴퍼니" },
+  { code: "TM", label: "티맵" },
+  { code: "TR", label: "한마음장애인복지회" },
+  { code: "TS", label: "태성콘텍" },
+  { code: "TU", label: "티비유" },
+  { code: "TV", label: "아이토브" },
+  { code: "UN", label: "유니이브이" },
+  { code: "UP", label: "유플러스아이티" },
+  { code: "US", label: "울산시" },
+  { code: "VT", label: "볼타" },
+  { code: "WB", label: "이브이루씨" },
+  { code: "YC", label: "노란충전" },
+  { code: "YY", label: "양양군" },
+  { code: "ZE", label: "이브이모드코리아" },
+].sort((a, b) => a.label.localeCompare(b.label, "ko"));
+
 // =============================
 // 🔹 자동완성 입력 컴포넌트
 // =============================
@@ -79,7 +262,6 @@ function AutocompleteInput({ label, value, onChange, onSelect }) {
   );
 }
 
-
 export default function Home() {
   // 전역 변수
   const centerMarkerRef = useRef(null); // ← 추가: 이동 중심 마커
@@ -116,7 +298,7 @@ export default function Home() {
     outputMin: 0, // ★ 이상
     outputMax: 350, // ★ 이하
     type: chargerTypeOptions.map((option) => option.code), // 기본 모두 체크
-    provider: "", // 예: "환경부"
+    provider: providerOptions.map((o) => o.code),
   }); // 필터 옵션 상태
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
@@ -229,7 +411,7 @@ export default function Home() {
       userMarkerRef.current.setPosition(position);
     }
   };
-      const handleOriginSelect = (item) => {
+  const handleOriginSelect = (item) => {
     setOriginInput(item.name);
     const map = mapInstance.current;
     if (!map) return;
@@ -243,17 +425,17 @@ export default function Home() {
     if (!centerMarkerRef.current) {
       centerMarkerRef.current = new window.Tmapv2.Marker({
         position: position,
-        map:      map,
-        icon:     "/img/myLocationIcon/currentLocation.png",
+        map: map,
+        icon: "/img/myLocationIcon/currentLocation.png",
         iconSize: new window.Tmapv2.Size(48, 72),
       });
       centerMarkerRef.current.addListener("click", () => {
         setSelectedStation({
           statNm: item.name,
-          addr:   item.address,
-          lat:    item.lat,
-          lon:    item.lon,
-          tel:    item.tel,
+          addr: item.address,
+          lat: item.lat,
+          lon: item.lon,
+          tel: item.tel,
         });
       });
     } else {
@@ -264,10 +446,10 @@ export default function Home() {
     // 3) 정보 패널도 바로 열어주기
     setSelectedStation({
       statNm: item.name,
-      addr:   item.address,
-      lat:    item.lat,
-      lon:    item.lon,
-      tel:    item.tel,
+      addr: item.address,
+      lat: item.lat,
+      lon: item.lon,
+      tel: item.tel,
     });
   };
 
@@ -283,17 +465,17 @@ export default function Home() {
     if (!centerMarkerRef.current) {
       centerMarkerRef.current = new window.Tmapv2.Marker({
         position: position,
-        map:      map,
-        icon:     "/img/myLocationIcon/currentLocation.png",
+        map: map,
+        icon: "/img/myLocationIcon/currentLocation.png",
         iconSize: new window.Tmapv2.Size(48, 72),
       });
       centerMarkerRef.current.addListener("click", () => {
         setSelectedStation({
           statNm: item.name,
-          addr:   item.address,
-          lat:    item.lat,
-          lon:    item.lon,
-          tel:    item.tel,
+          addr: item.address,
+          lat: item.lat,
+          lon: item.lon,
+          tel: item.tel,
         });
       });
     } else {
@@ -302,14 +484,14 @@ export default function Home() {
 
     setSelectedStation({
       statNm: item.name,
-      addr:   item.address,
-      lat:    item.lat,
-      lon:    item.lon,
-      tel:    item.tel,
+      addr: item.address,
+      lat: item.lat,
+      lon: item.lon,
+      tel: item.tel,
     });
   };
-// 스왑함수
-   const handleSwap = () => {
+  // 스왑함수
+  const handleSwap = () => {
     setOriginInput((o) => {
       setDestInput(o);
       return destInput;
@@ -346,6 +528,17 @@ export default function Home() {
   const handleFilterChange = (e) => {
     const { name, type, checked, value } = e.target;
 
+    if (name === "provider") {
+      // 수정: provider 체크박스 토글
+      setFilterOptions((prev) => {
+        const setCodes = new Set(prev.provider);
+        if (checked) setCodes.add(value);
+        else setCodes.delete(value);
+        return { ...prev, provider: Array.from(setCodes) };
+      });
+      return;
+    }
+
     if (name === "type") {
       setFilterOptions((prev) => {
         const currentTypes = new Set(prev.type);
@@ -375,7 +568,6 @@ export default function Home() {
     setShowFilter(false);
   };
 
-  
   // === 선택 구간 텍스트 표시 ===
   const outputText =
     filterOptions.outputMin === 0 && filterOptions.outputMax === 350
@@ -404,20 +596,22 @@ export default function Home() {
       {/* <h2>전기차 충전소 홈 </h2> */}
       <div id="map_div" ref={mapRef} className="map-container"></div>
       <div className="autocomplete-bar">
-      {/* 자동완성 입력 UI */}
-      <AutocompleteInput
-        label="출발지"
-        value={originInput}
-        onChange={setOriginInput}
-        onSelect={handleOriginSelect}
-      />
-      <button className="swap-button" onClick={handleSwap}>🔄</button>
-      <AutocompleteInput
-        label="도착지"
-        value={destInput}
-        onChange={setDestInput}
-        onSelect={handleDestSelect}
-      />
+        {/* 자동완성 입력 UI */}
+        <AutocompleteInput
+          label="출발지"
+          value={originInput}
+          onChange={setOriginInput}
+          onSelect={handleOriginSelect}
+        />
+        <button className="swap-button" onClick={handleSwap}>
+          🔄
+        </button>
+        <AutocompleteInput
+          label="도착지"
+          value={destInput}
+          onChange={setDestInput}
+          onSelect={handleDestSelect}
+        />
       </div>
 
       {/* 필터 아이콘 및 창 */}
@@ -425,9 +619,6 @@ export default function Home() {
         onClick={() => setShowFilter((prev) => !prev)}
         className="filter-button"
       >
-
-
-
         🔍 필터
       </button>
 
@@ -530,9 +721,37 @@ export default function Home() {
           </div>
 
           <fieldset>
-            <legend>충전기 타입:</legend>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8, // 항목과 버튼 간 간격
+              }}
+            >
+              <legend>충전기 타입:</legend>
+              <button
+                type="button"
+                style={{
+                  fontSize: 14,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#555",
+                }}
+                onClick={() =>
+                  setFilterOptions((prev) => ({ ...prev, type: [] }))
+                }
+              >
+                전체 삭제
+              </button>
+            </div>
+
             {chargerTypeOptions.map((option) => (
-              <label key={option.code}>
+              <label
+                key={option.code}
+                style={{ display: "block", marginBottom: 4 }}
+              >
                 <input
                   type="checkbox"
                   name="type"
@@ -540,20 +759,65 @@ export default function Home() {
                   checked={filterOptions.type.includes(option.code)}
                   onChange={handleFilterChange}
                 />
-                {option.label}
+                {" " + option.label}
               </label>
             ))}
           </fieldset>
-          <label>
-            사업자:
-            <input
-              type="text"
-              name="provider"
-              value={filterOptions.provider}
-              onChange={handleFilterChange}
-              placeholder="예: 환경부"
-            />
-          </label>
+
+          {/* 사업자 필터 섹션 */}
+          <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
+              <button
+                type="button"
+                style={{
+                  fontSize: 14,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#555",
+                }}
+                onClick={() =>
+                  setFilterOptions((prev) => ({ ...prev, provider: [] }))
+                }
+              >
+                전체 삭제
+              </button>
+            </div>
+            <div
+              style={{
+                maxHeight: "200px",
+                overflowY: "auto",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                marginTop: 4,
+              }}
+            >
+              {providerOptions.map((opt) => (
+                <label
+                  key={opt.code}
+                  style={{ display: "block", marginBottom: 4 }}
+                >
+                  <input
+                    type="checkbox"
+                    name="provider"
+                    value={opt.code}
+                    checked={filterOptions.provider.includes(opt.code)}
+                    onChange={handleFilterChange}
+                  />
+                  {" " + opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <button onClick={applyFilters}>필터 적용</button>
         </div>
       )}
