@@ -5,8 +5,8 @@ import react from "@vitejs/plugin-react";
 export default {
   server: {
     proxy: {
-      // key : value로 Spring 프로젝트 restapi 연결
       "/api": "http://localhost:8082",
+
+      },
     },
-  },
 };

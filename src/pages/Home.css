@@ -37,3 +37,81 @@
 .map-container {
   position: relative;
 }
+/* 자동완성 입력 전체 wrapper */
+.autocomplete-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 각 input wrapper를 세로 정렬 */
+.autocomplete-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.autocomplete-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ccc;
+  z-index: 99;
+  position: relative;
+}
+/* 라벨 스타일 */
+.autocomplete-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+/* 입력 필드 스타일 */
+.autocomplete-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* 자동완성 리스트 박스 */
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 6px 6px;
+}
+
+/* 자동완성 항목 스타일 */
+.autocomplete-item {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.autocomplete-item:hover {
+  background-color: #f0f0f0;
+}
