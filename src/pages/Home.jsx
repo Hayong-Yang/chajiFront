@@ -194,12 +194,27 @@ const providerOptions = [
   { code: "ZE", label: "이브이모드코리아" },
 ].sort((a, b) => a.label.localeCompare(b.label, "ko"));
 
+// 충전기 타입 설명 리스트
+const chargerTypeOptions = [
+  { code: "01", label: "DC 차데모" },
+  { code: "02", label: "AC 완속" },
+  { code: "03", label: "DC 차데모+AC3 상" },
+  { code: "04", label: "DC 콤보" },
+  { code: "05", label: "DC 차데모+DC 콤보" },
+  { code: "06", label: "DC 차데모+AC3 상+DC 콤보" },
+  { code: "07", label: "AC3 상" },
+  { code: "08", label: "DC 콤보(완속)" },
+  { code: "09", label: "NACS" },
+  { code: "10", label: "DC 콤보+NACS" },
+];
+
 // =============================
 // 🔹 자동완성 입력 컴포넌트
 // =============================
 function AutocompleteInput({ label, value, onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
+
   const timeoutRef = useRef(null);
   const wrapperRef = useRef(null);
 
@@ -277,19 +292,10 @@ export default function Home() {
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
-  // 충전기 타입 설명 리스트
-  const chargerTypeOptions = [
-    { code: "01", label: "DC 차데모" },
-    { code: "02", label: "AC 완속" },
-    { code: "03", label: "DC 차데모+AC3 상" },
-    { code: "04", label: "DC 콤보" },
-    { code: "05", label: "DC 차데모+DC 콤보" },
-    { code: "06", label: "DC 차데모+AC3 상+DC 콤보" },
-    { code: "07", label: "AC3 상" },
-    { code: "08", label: "DC 콤보(완속)" },
-    { code: "09", label: "NACS" },
-    { code: "10", label: "DC 콤보+NACS" },
-  ];
+  // ✨ 추가: 인라인 속도 필터 표시 토글
+  const [showSpeedDropdown, setShowSpeedDropdown] = useState(false); // ⚡ 수정됨
+  // ✨ 추가: 인라인 타입 필터 표시 토글
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false); // ⚡ 수정됨
 
   const [showFilter, setShowFilter] = useState(false); // 필터 창 표시 여부
   const [filterOptions, setFilterOptions] = useState({
@@ -311,6 +317,56 @@ export default function Home() {
   useEffect(() => {
     filterOptionsRef.current = filterOptions; // filterOptions가 바뀔 때 최신값 저장
   }, [filterOptions]);
+
+  // === inline 필터 적용 함수 ===
+  const applyFiltersInline = async (options) => {
+    // ✨ 추가
+    await setStationNear(centerLatRef.current, centerLonRef.current);
+    const data = await getStationNear(
+      centerLatRef.current,
+      centerLonRef.current,
+      mapInstance,
+      markersRef,
+      setSelectedStation,
+      options
+    );
+    setStations(data); // 📌 리스트 업데이트
+  };
+
+  // ✨ 추가: 속도 드롭다운 토글 핸들러
+  const handleSpeedToggle = () => {
+    setShowSpeedDropdown((prev) => !prev);
+  }; // ⚡ 수정됨
+  // ✨ 추가: 속도 선택 시 필터 즉시 적용
+  const handleSpeedChange = (e) => {
+    const { name, value } = e.target;
+    setFilterOptions((prev) => {
+      const next = { ...prev, [name]: Number(value) };
+      if (next.outputMin > next.outputMax) {
+        if (name === "outputMin") next.outputMax = next.outputMin;
+        else next.outputMin = next.outputMax;
+      }
+      applyFiltersInline(next);
+      return next;
+    });
+  };
+
+  // ✨ 추가: 타입 드롭다운 토글 핸들러
+  const handleTypeToggle = () => {
+    setShowTypeDropdown((prev) => !prev);
+  }; // ⚡ 수정됨
+  // ✨ 추가: 타입 체크박스 선택 시 필터 즉시 적용
+  const handleInlineTypeChange = (e) => {
+    const { checked, value } = e.target;
+    setFilterOptions((prev) => {
+      const setCodes = new Set(prev.type);
+      if (checked) setCodes.add(value);
+      else setCodes.delete(value);
+      const next = { ...prev, type: Array.from(setCodes) };
+      applyFiltersInline(next);
+      return next;
+    });
+  };
 
   const initTmap = async () => {
     // 1. 현재 위치 얻기
@@ -593,6 +649,68 @@ export default function Home() {
   // 화면 부분
   return (
     <div>
+      {/* ✨ 추가: 지도 위 인라인 필터 바 */}
+      <div className="inline-filter-bar">
+        {" "}
+        {/* ⚡ 수정됨 */}
+        <button onClick={handleSpeedToggle}>충전속도 ▾</button>{" "}
+        {/* ⚡ 수정됨 */}
+        {showSpeedDropdown /* ⚡ 수정됨 */ && (
+          <div className="dropdown speed-dropdown">
+            {" "}
+            {/* ⚡ 수정됨 */}
+            <select
+              name="outputMin"
+              value={filterOptions.outputMin}
+              onChange={handleSpeedChange}
+            >
+              {" "}
+              {/* ⚡ 수정됨 */}
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+            <span style={{ margin: "0 8px" }}>~</span>
+            <select
+              name="outputMax"
+              value={filterOptions.outputMax}
+              onChange={handleSpeedChange}
+            >
+              {" "}
+              {/* ⚡ 수정됨 */}
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button onClick={handleTypeToggle}>충전타입 ▾</button> {/* ⚡ 수정됨 */}
+        {showTypeDropdown /* ⚡ 수정됨 */ && (
+          <div className="dropdown type-dropdown">
+            {" "}
+            {/* ⚡ 수정됨 */}
+            {chargerTypeOptions.map((opt) => (
+              <label
+                key={opt.code}
+                style={{ display: "block", marginBottom: 4 }}
+              >
+                <input
+                  type="checkbox"
+                  value={opt.code}
+                  checked={filterOptions.type.includes(opt.code)}
+                  onChange={handleInlineTypeChange}
+                />{" "}
+                {opt.label} {/* ⚡ 수정됨 */}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* <h2>전기차 충전소 홈 </h2> */}
       <div id="map_div" ref={mapRef} className="map-container"></div>
       <div className="autocomplete-bar">
