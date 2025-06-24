@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { fetchAutocomplete } from "../api/poi";
 import {
   setStationNear,
@@ -208,6 +209,26 @@ const chargerTypeOptions = [
   { code: "10", label: "DC 콤보+NACS" },
 ];
 
+// === 리스트보기 전용 서버 호출 함수 ===
+async function fetchStationList(filterOptions, lat, lon) {
+  try {
+    const resp = await axios.post("/api/station/getStationNear", {
+      lat,
+      lon,
+      freeParking: filterOptions.freeParking,
+      noLimit: filterOptions.noLimit,
+      outputMin: filterOptions.outputMin,
+      outputMax: filterOptions.outputMax,
+      type: filterOptions.type,
+      provider: filterOptions.provider,
+    });
+    return resp.data; // 수정: JSON 파싱된 배열 반환
+  } catch (e) {
+    console.error("리스트보기 호출 실패", e); // 수정: 에러 로깅
+    return [];
+  }
+}
+
 // =============================
 // 🔹 자동완성 입력 컴포넌트
 // =============================
@@ -278,6 +299,10 @@ function AutocompleteInput({ label, value, onChange, onSelect }) {
 }
 
 export default function Home() {
+  // 상태 추가: 리스트 보기 상태 및 충전소 리스트
+  const [stations, setStations] = useState([]); // 수정: 충전소 리스트
+  const [showList, setShowList] = useState(false); // 수정: 리스트 뷰 토글
+
   // 전역 변수
   const centerMarkerRef = useRef(null); // ← 추가: 이동 중심 마커
   const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조용
@@ -318,11 +343,22 @@ export default function Home() {
     filterOptionsRef.current = filterOptions; // filterOptions가 바뀔 때 최신값 저장
   }, [filterOptions]);
 
+  // 리스트보기 핸들러
+  const handleShowList = async () => {
+    await setStationNear(centerLatRef.current, centerLonRef.current);
+    const list = await fetchStationList(
+      filterOptions,
+      centerLatRef.current,
+      centerLonRef.current
+    );
+    setStations(list); // 수정: 상태 업데이트
+    setShowList(true); // 수정: 리스트뷰 표시
+  };
+
   // === inline 필터 적용 함수 ===
   const applyFiltersInline = async (options) => {
-    // ✨ 추가
     await setStationNear(centerLatRef.current, centerLonRef.current);
-    const data = await getStationNear(
+    await getStationNear(
       centerLatRef.current,
       centerLonRef.current,
       mapInstance,
@@ -330,7 +366,6 @@ export default function Home() {
       setSelectedStation,
       options
     );
-    setStations(data); // 📌 리스트 업데이트
   };
 
   // ✨ 추가: 속도 드롭다운 토글 핸들러
@@ -648,7 +683,16 @@ export default function Home() {
 
   // 화면 부분
   return (
-    <div>
+    <div className="home-container">
+      {/* 수정: 맵 위에 고정된 리스트보기 버튼 */}
+      <button
+        className="list-button"
+        onClick={handleShowList}
+        style={{ position: "absolute", top: 10, right: 10, zIndex: 1001 }}
+      >
+        리스트 보기
+      </button>
+
       {/* ✨ 추가: 지도 위 인라인 필터 바 */}
       <div className="inline-filter-bar">
         {" "}
@@ -956,6 +1000,47 @@ export default function Home() {
           </>
         )}
       </div>
+
+      {showList && (
+        <div
+          className="station-list-container" // ✨ 수정됨
+          style={{
+            position: "absolute",
+            top: 60,
+            right: 10,
+            width: 300,
+            maxHeight: "70vh",
+            overflowY: "auto",
+            background: "#fff",
+            padding: "12px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+          }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            추천 충전소 리스트
+          </h3>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {stations.map((st, idx) => (
+              <li
+                key={st.statId + idx}
+                className="station-item"
+                style={{
+                  marginBottom: "12px",
+                  borderBottom: "1px solid #eee",
+                  paddingBottom: "8px",
+                }}
+              >
+                <strong>{st.statNm}</strong> ({st.bnm})<br />
+                {st.addr}
+                <br />
+                점수: {st.recommendScore}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
