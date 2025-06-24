@@ -1,80 +1,130 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { initMap, debounce, fetchPoiSuggestions, placeMarker, swapMarkers } from './tmapUtils';
+import React, { useState, useEffect, useRef } from "react";
+import { fetchAutocomplete, moveMapTo } from "../api/poi";
 
-export default function PoiSearch() {
-  const [originQuery, setOriginQuery] = useState('');
-  const [destQuery, setDestQuery] = useState('');
-  const [originSuggestions, setOriginSuggestions] = useState([]);
-  const [destSuggestions, setDestSuggestions] = useState([]);
-  const [infoBoxItem, setInfoBoxItem] = useState(null);
+function AutocompleteInput({ label, value, onChange, onSelect }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showList, setShowList] = useState(false);
+  const timeoutRef = useRef(null);
+  const wrapperRef = useRef(null);
 
-  const originRef = useRef();
-  const destRef = useRef();
-
+  // 자동완성 결과 가져오기
   useEffect(() => {
-    initMap();
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (value.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    timeoutRef.current = setTimeout(async () => {
+      const data = await fetchAutocomplete(value.trim());
+      setSuggestions(data);
+      setShowList(true);
+    }, 300);
+  }, [value]);
+
+  // 외부 클릭 시 자동완성 리스트 닫기
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowList(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = debounce(async (q, setSuggestions) => {
-    if (q.length < 2) return setSuggestions([]);
-    const data = await fetchPoiSuggestions(q);
-    setSuggestions(data);
-  }, 300);
+  return (
+    <div style={{ position: "relative", marginBottom: 20, maxWidth: 400 }} ref={wrapperRef}>
+      <label>{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`${label} 입력`}
+        autoComplete="off"
+        onFocus={() => {
+          if (suggestions.length > 0) setShowList(true);
+        }}
+        style={{ width: "100%", padding: 8, fontSize: 14, borderRadius: 6, border: "1px solid #ccc" }}
+      />
+      {showList && suggestions.length > 0 && (
+        <ul
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: "#fff",
+            border: "1px solid #ccc",
+            borderTop: "none",
+            maxHeight: 200,
+            overflowY: "auto",
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            zIndex: 1000,
+          }}
+        >
+          {suggestions.map((item) => (
+            <li
+              key={`${item.name}-${item.lat}-${item.lon}`}
+              onClick={() => {
+                onSelect(item);
+                setShowList(false);
+              }}
+              style={{ padding: 8, borderBottom: "1px solid #eee", cursor: "pointer" }}
+            >
+              <strong>{item.name}</strong>
+              <br />
+              <small>{item.address}</small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
-  const handleSelect = (item, type) => {
-    placeMarker(item, type);
-    if (type === 'origin') setOriginSuggestions([]);
-    else setDestSuggestions([]);
-    setInfoBoxItem(item);
+export default function Poi() {
+  const [originInput, setOriginInput] = useState("");
+  const [destInput, setDestInput] = useState("");
+
+  useEffect(() => {
+    if (!window.Tmapv2 || window.map) return;
+
+    const map = new window.Tmapv2.Map("map_div", {
+      center: new window.Tmapv2.LatLng(37.5665, 126.9780),
+      width: "100%",
+      height: "700px",
+      zoom: 16,
+    });
+    window.map = map;
+  }, []);
+
+  const handleOriginSelect = (item) => {
+    setOriginInput(item.name);
+    moveMapTo(item.lat, item.lon);
+  };
+
+  const handleDestSelect = (item) => {
+    setDestInput(item.name);
+    moveMapTo(item.lat, item.lon);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', padding: '16px' }}>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <div>
-          <input
-            ref={originRef}
-            placeholder="출발지를 입력하세요"
-            value={originQuery}
-            onChange={(e) => {
-              setOriginQuery(e.target.value);
-              handleSearch(e.target.value, setOriginSuggestions);
-            }}
-          />
-          <ul className="suggest-list">
-            {originSuggestions.map((item, i) => (
-              <li key={i} onClick={() => handleSelect(item, 'origin')}>{item.name}</li>
-            ))}
-          </ul>
-        </div>
-        <button onClick={swapMarkers}>⇄</button>
-        <div>
-          <input
-            ref={destRef}
-            placeholder="도착지를 입력하세요"
-            value={destQuery}
-            onChange={(e) => {
-              setDestQuery(e.target.value);
-              handleSearch(e.target.value, setDestSuggestions);
-            }}
-          />
-          <ul className="suggest-list">
-            {destSuggestions.map((item, i) => (
-              <li key={i} onClick={() => handleSelect(item, 'dest')}>{item.name}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div id="map" style={{ width: '100%', height: '500px', marginTop: '16px' }} />
-
-      {infoBoxItem && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', background: '#fff', borderTop: '1px solid #ccc', padding: '16px', boxShadow: '0 -2px 8px rgba(0,0,0,0.2)', textAlign: 'center' }}>
-          <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>{infoBoxItem.name}</p>
-          <button onClick={() => handleSelect(infoBoxItem, 'origin')}>출발지로</button>
-          <button onClick={() => handleSelect(infoBoxItem, 'dest')}>도착지로</button>
-        </div>
-      )}
+    <div className="poi-wrapper">
+      <AutocompleteInput
+        label="출발지"
+        value={originInput}
+        onChange={setOriginInput}
+        onSelect={handleOriginSelect}
+      />
+      <AutocompleteInput
+        label="도착지"
+        value={destInput}
+        onChange={setDestInput}
+        onSelect={handleDestSelect}
+      />
+      <div id="map_div" className="map-area" style={{ marginTop: 20 }}></div>
     </div>
   );
 }

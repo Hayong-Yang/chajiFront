@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { fetchAutocomplete } from "../api/poi";
 import {
   setStationNear,
   getStationNear,
@@ -10,8 +11,78 @@ import "./home.css";
 // === 충전 속도 옵션 배열 ===
 const outputOptions = [0, 50, 100, 150, 200, 250, 300, 350];
 
+// =============================
+// 🔹 자동완성 입력 컴포넌트
+// =============================
+function AutocompleteInput({ label, value, onChange, onSelect }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showList, setShowList] = useState(false);
+  const timeoutRef = useRef(null);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (value.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    timeoutRef.current = setTimeout(async () => {
+      const data = await fetchAutocomplete(value.trim());
+      setSuggestions(data);
+      setShowList(true);
+    }, 300);
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowList(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="autocomplete-wrapper" ref={wrapperRef}>
+      <label className="autocomplete-label">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`${label} 입력`}
+        autoComplete="off"
+        onFocus={() => {
+          if (suggestions.length > 0) setShowList(true);
+        }}
+        className="autocomplete-input"
+      />
+      {showList && suggestions.length > 0 && (
+        <ul className="autocomplete-list">
+          {suggestions.map((item) => (
+            <li
+              key={`${item.name}-${item.lat}-${item.lon}`}
+              onClick={() => {
+                onSelect(item);
+                setShowList(false);
+              }}
+              className="autocomplete-item"
+            >
+              <strong>{item.name}</strong>
+              <br />
+              <small>{item.address}</small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+
 export default function Home() {
   // 전역 변수
+  const centerMarkerRef = useRef(null); // ← 추가: 이동 중심 마커
   const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조용
   const mapInstance = useRef(null); // 생성된 지도 객체(Tmapv2.Map)를 저장
   const userMarkerRef = useRef(null); // 사용자 위치 마커 객체
@@ -19,7 +90,9 @@ export default function Home() {
   // 기본 중심 좌표 (// 실패 시 centerLat, centerLon은 기본값 유지)
   const centerLatRef = useRef(37.504198); // 역삼역 위도
   const centerLonRef = useRef(127.04894); // 역삼역 경도
-  // 충전소 상태 info 접근
+  const [originInput, setOriginInput] = useState("");
+  const [destInput, setDestInput] = useState("");
+  // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
   // 충전기 타입 설명 리스트
@@ -156,6 +229,104 @@ export default function Home() {
       userMarkerRef.current.setPosition(position);
     }
   };
+      const handleOriginSelect = (item) => {
+    setOriginInput(item.name);
+    const map = mapInstance.current;
+    if (!map) return;
+
+    // 1) 지도 센터 이동
+    const position = new window.Tmapv2.LatLng(item.lat, item.lon);
+    map.setCenter(position);
+    map.setZoom(15);
+
+    // 2) 기준 마커 생성 혹은 이동 + 클릭 리스너
+    if (!centerMarkerRef.current) {
+      centerMarkerRef.current = new window.Tmapv2.Marker({
+        position: position,
+        map:      map,
+        icon:     "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+      });
+      centerMarkerRef.current.addListener("click", () => {
+        setSelectedStation({
+          statNm: item.name,
+          addr:   item.address,
+          lat:    item.lat,
+          lon:    item.lon,
+          tel:    item.tel,
+        });
+      });
+    } else {
+      // 이미 생성된 마커라면 위치만 업데이트
+      centerMarkerRef.current.setPosition(position);
+    }
+
+    // 3) 정보 패널도 바로 열어주기
+    setSelectedStation({
+      statNm: item.name,
+      addr:   item.address,
+      lat:    item.lat,
+      lon:    item.lon,
+      tel:    item.tel,
+    });
+  };
+
+  const handleDestSelect = (item) => {
+    setDestInput(item.name);
+    const map = mapInstance.current;
+    if (!map) return;
+
+    const position = new window.Tmapv2.LatLng(item.lat, item.lon);
+    map.setCenter(position);
+    map.setZoom(15);
+
+    if (!centerMarkerRef.current) {
+      centerMarkerRef.current = new window.Tmapv2.Marker({
+        position: position,
+        map:      map,
+        icon:     "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+      });
+      centerMarkerRef.current.addListener("click", () => {
+        setSelectedStation({
+          statNm: item.name,
+          addr:   item.address,
+          lat:    item.lat,
+          lon:    item.lon,
+          tel:    item.tel,
+        });
+      });
+    } else {
+      centerMarkerRef.current.setPosition(position);
+    }
+
+    setSelectedStation({
+      statNm: item.name,
+      addr:   item.address,
+      lat:    item.lat,
+      lon:    item.lon,
+      tel:    item.tel,
+    });
+  };
+// 스왑함수
+   const handleSwap = () => {
+    setOriginInput((o) => {
+      setDestInput(o);
+      return destInput;
+    });
+  };
+
+  // ** 패널 버튼 함수 **
+  const handleSetOrigin = () => {
+    if (!selectedStation) return;
+    setOriginInput(selectedStation.statNm);
+    setSelectedStation(null);
+  };
+  const handleSetDest = () => {
+    if (!selectedStation) return;
+    setDestInput(selectedStation.statNm);
+    setSelectedStation(null);
+  };
 
   // === 이상/이하 select 박스 핸들러 ===
   const handleOutputSelect = (e) => {
@@ -204,6 +375,7 @@ export default function Home() {
     setShowFilter(false);
   };
 
+  
   // === 선택 구간 텍스트 표시 ===
   const outputText =
     filterOptions.outputMin === 0 && filterOptions.outputMax === 350
@@ -231,12 +403,31 @@ export default function Home() {
     <div>
       {/* <h2>전기차 충전소 홈 </h2> */}
       <div id="map_div" ref={mapRef} className="map-container"></div>
+      <div className="autocomplete-bar">
+      {/* 자동완성 입력 UI */}
+      <AutocompleteInput
+        label="출발지"
+        value={originInput}
+        onChange={setOriginInput}
+        onSelect={handleOriginSelect}
+      />
+      <button className="swap-button" onClick={handleSwap}>🔄</button>
+      <AutocompleteInput
+        label="도착지"
+        value={destInput}
+        onChange={setDestInput}
+        onSelect={handleDestSelect}
+      />
+      </div>
 
       {/* 필터 아이콘 및 창 */}
       <button
         onClick={() => setShowFilter((prev) => !prev)}
         className="filter-button"
       >
+
+
+
         🔍 필터
       </button>
 
@@ -375,6 +566,10 @@ export default function Home() {
             <p>{selectedStation.addr}</p>
             <p>{selectedStation.statId}</p>
             <p>{selectedStation.chgerId}</p>
+            <div className="station-info-buttons">
+              <button onClick={handleSetOrigin}>출발지</button>
+              <button onClick={handleSetDest}>도착지</button>
+            </div>
             <button onClick={() => setSelectedStation(null)}>닫기</button>
           </>
         )}

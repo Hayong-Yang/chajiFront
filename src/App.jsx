@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
+import Poi from "./pages/Poi"
 import RecommendRoute from "./pages/RecomendRoute";
 
 export default function App() {

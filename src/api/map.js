@@ -50,29 +50,28 @@ export const getStationNear = async (
     console.log("서버 응답:", stations);
 
     // 기존 마커 제거
-    markersRef.current.forEach((marker) => marker.setMap(null));
-    markersRef.current = []; // 초기화
+     markersRef.current.forEach((entry) => entry.marker.setMap(null));
+     markersRef.current = [];
 
-    // 버전 1. 새 마커 찍기
-    stations.forEach((station) => {
-      const marker = new Tmapv2.Marker({
-        position: new Tmapv2.LatLng(station.lat, station.lng),
-        // label: station.bnm,
-        title: station.bnm,
-        icon: station.logoUrl,
-        iconSize: new Tmapv2.Size(48, 72),
-        map: mapInstance.current,
-      });
+    // 버전 1. 새 마커 찍기+   // 새 마커 찍기
+   stations.forEach((station) => {
+     const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+     const marker  = new window.Tmapv2.Marker({
+       position:   position,
+       map:        mapInstance.current,
+       icon:       "/img/logos/default.png",
+       iconSize:   new window.Tmapv2.Size(48, 72),
+       iconAnchor: new window.Tmapv2.Point(24, 72),
+     });
 
-      if (typeof setSelectedStation === "function") {
-        marker.addListener("click", () => {
-          console.log("📍 마커 클릭됨:", station); // ← 콘솔에서 이게 보이는지 확인
-          setSelectedStation(station);
-        });
-      }
+     marker.addListener("click", () => {
+       mapInstance.current.setCenter(position);
+       setSelectedStation?.(station);
+     });
 
-      markersRef.current.push(marker); // ref 배열에 저장
-    });
+     // 이제 entry 형태로 저장
+     markersRef.current.push({ data: station, marker: marker });
+   });
   } catch (error) {
     console.error("서버 전송 에러:", error);
   }
