@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAutocomplete, normalizeCoords,getStationMeta } from "../api/poi";
+import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 
 import {
@@ -237,7 +237,7 @@ async function fetchStationList(filterOptions, lat, lon) {
 // =============================
 // 🔹 자동완성 입력 컴포넌트
 // =============================
-function AutocompleteInput({ label, value="", onChange, onSelect }) {
+function AutocompleteInput({ label, value = "", onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
 
@@ -247,7 +247,7 @@ function AutocompleteInput({ label, value="", onChange, onSelect }) {
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     const v = (value || "").trim();
-     if (v.length < 2) {
+    if (v.length < 2) {
       setSuggestions([]);
       return;
     }
@@ -316,10 +316,10 @@ export default function Home() {
   const [mode, setMode] = useState("search"); //검색창 구분
   const [searchInput, setSearchInput] = useState(""); //검색창 모드
   const centerMarkerRef = useRef(null); // ← 추가: 이동 중심 마커
-   const originMarkerRef  = useRef(null); // 출발지 마커
-  const destMarkerRef    = useRef(null); // 도착지 마커
-   const originIconUrl = "/img/logos/start.png";
-  const destIconUrl   = "/img/logos/end.png";
+  const originMarkerRef = useRef(null); // 출발지 마커
+  const destMarkerRef = useRef(null); // 도착지 마커
+  const originIconUrl = "/img/logos/start.png";
+  const destIconUrl = "/img/logos/end.png";
   const defaultIconUrl = "/img/logos/default.png";
   const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조용
   const mapInstance = useRef(null); // 생성된 지도 객체(Tmapv2.Map)를 저장
@@ -328,11 +328,11 @@ export default function Home() {
   // 기본 중심 좌표 (// 실패 시 centerLat, centerLon은 기본값 유지)
   const centerLatRef = useRef(37.504198); // 역삼역 위도
   const centerLonRef = useRef(127.04894); // 역삼역 경도
-  const [originInput, setOriginInput] = useState("");  //출발지 입력값
-  const [destInput, setDestInput] = useState("");  //도착지 입력값
+  const [originInput, setOriginInput] = useState(""); //출발지 입력값
+  const [destInput, setDestInput] = useState(""); //도착지 입력값
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
-  
+
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
@@ -366,7 +366,7 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDrawer]);
 
-  const handleSearchSelect = (item,source = "search") => {
+  const handleSearchSelect = (item, source = "search") => {
     const map = mapInstance.current;
     if (!map) return;
 
@@ -399,14 +399,13 @@ export default function Home() {
     map.setZoom(15);
 
     if (source === "origin") {
-    setOriginInput(meta.statNm);
-    setSelectedOriginStation(meta);
-  } else if (source === "dest") {
-    setDestInput(meta.statNm);
-    setSelectedDestStation(meta);
-  }
+      setOriginInput(meta.statNm);
+      setSelectedOriginStation(meta);
+    } else if (source === "dest") {
+      setDestInput(meta.statNm);
+      setSelectedDestStation(meta);
+    }
   };
-
 
   const navigate = useNavigate();
 
@@ -531,8 +530,8 @@ export default function Home() {
       markersRef,
       setSelectedStation,
       filterOptionsRef, // 항상 최신값 유지되도록 ref 전달
-      originMarkerRef,      // 추가
-      destMarkerRef  
+      originMarkerRef, // 추가
+      destMarkerRef
     );
     // 7. 실시간으로 사용자 움직임 감지
     // + sendCenterToServer 해서 중심 위경도 전달, 충전소 호출
@@ -544,8 +543,8 @@ export default function Home() {
       markersRef,
       setSelectedStation,
       filterOptionsRef,
-      originMarkerRef,     
-      destMarkerRef  
+      originMarkerRef,
+      destMarkerRef
     );
   };
 
@@ -578,7 +577,7 @@ export default function Home() {
     const position = new window.Tmapv2.LatLng(lat, lon);
 
     if (!userMarkerRef.current) {
-       console.log("🎯 사용자 마커 새로 생성");
+      console.log("🎯 사용자 마커 새로 생성");
       userMarkerRef.current = new window.Tmapv2.Marker({
         position,
         icon: "/img/myLocationIcon/currentLocation.png",
@@ -595,186 +594,196 @@ export default function Home() {
     setOriginInput(meta.statNm);
     const map = mapInstance.current;
 
-  if (map) {
-    const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
-    map.setCenter(position);
-    map.setZoom(15);
-    // setOrigin(meta); // 필요 시 위치 상태 저장
-  }
-};
-   const handleDestSelect = (item) => {
+    if (map) {
+      const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
+      map.setCenter(position);
+      map.setZoom(15);
+      // setOrigin(meta); // 필요 시 위치 상태 저장
+    }
+  };
+  const handleDestSelect = (item) => {
     const meta = getStationMeta(normalizeCoords(item));
     setDestInput(meta.statNm);
-    
-  const map = mapInstance.current;
-  if (map) {
-    const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
-    map.setCenter(position);
-    map.setZoom(15);
-  }
+
+    const map = mapInstance.current;
+    if (map) {
+      const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
+      map.setCenter(position);
+      map.setZoom(15);
+    }
     // setDest(meta); // 필요 시 위치 상태 저장
   };
 
   // 스왑함수
-const handleSwap = () => {
-  if (!originMarkerRef.current || !destMarkerRef.current) return;
+  const handleSwap = () => {
+    if (!originMarkerRef.current || !destMarkerRef.current) return;
 
-  const map = mapInstance.current;
+    const map = mapInstance.current;
 
-  // 1. 위치 & statId 백업
-  const originPos = originMarkerRef.current.getPosition();
-  const destPos = destMarkerRef.current.getPosition();
-  const originStatId = originMarkerRef.current.dataStatId;
-  const destStatId = destMarkerRef.current.dataStatId;
+    // 1. 위치 & statId 백업
+    const originPos = originMarkerRef.current.getPosition();
+    const destPos = destMarkerRef.current.getPosition();
+    const originStatId = originMarkerRef.current.dataStatId;
+    const destStatId = destMarkerRef.current.dataStatId;
 
-  // 2. 기존 마커 제거
-  originMarkerRef.current.setMap(null);
-  destMarkerRef.current.setMap(null);
+    // 2. 기존 마커 제거
+    originMarkerRef.current.setMap(null);
+    destMarkerRef.current.setMap(null);
 
-  // 3. 새 마커 생성
-  const newOriginMarker = new window.Tmapv2.Marker({
-    position: destPos,
-    map,
-    icon: "/img/logos/start.png",
-    iconSize: new window.Tmapv2.Size(36, 54),
-    iconAnchor: new window.Tmapv2.Point(18, 54),
-  });
-  newOriginMarker.dataStatId = destStatId;
+    // 3. 새 마커 생성
+    const newOriginMarker = new window.Tmapv2.Marker({
+      position: destPos,
+      map,
+      icon: "/img/logos/start.png",
+      iconSize: new window.Tmapv2.Size(36, 54),
+      iconAnchor: new window.Tmapv2.Point(18, 54),
+    });
+    newOriginMarker.dataStatId = destStatId;
 
-  const newDestMarker = new window.Tmapv2.Marker({
-    position: originPos,
-    map,
-    icon: "/img/logos/end.png",
-    iconSize: new window.Tmapv2.Size(36, 54),
-    iconAnchor: new window.Tmapv2.Point(18, 54),
-  });
-  newDestMarker.dataStatId = originStatId;
+    const newDestMarker = new window.Tmapv2.Marker({
+      position: originPos,
+      map,
+      icon: "/img/logos/end.png",
+      iconSize: new window.Tmapv2.Size(36, 54),
+      iconAnchor: new window.Tmapv2.Point(18, 54),
+    });
+    newDestMarker.dataStatId = originStatId;
 
-  // 4. 클릭 이벤트 부여
-  newOriginMarker.addListener("click", () => {
-    map.setCenter(newOriginMarker.getPosition());
-  });
-  newDestMarker.addListener("click", () => {
-    map.setCenter(newDestMarker.getPosition());
-  });
+    // 4. 클릭 이벤트 부여
+    newOriginMarker.addListener("click", () => {
+      map.setCenter(newOriginMarker.getPosition());
+    });
+    newDestMarker.addListener("click", () => {
+      map.setCenter(newDestMarker.getPosition());
+    });
 
-  // 5. 레퍼런스 교체
-  originMarkerRef.current = newOriginMarker;
-  destMarkerRef.current = newDestMarker;
+    // 5. 레퍼런스 교체
+    originMarkerRef.current = newOriginMarker;
+    destMarkerRef.current = newDestMarker;
 
-  // 6. 입력창 스왑
-  const tempInput = originInput;
-  setOriginInput(destInput);
-  setDestInput(tempInput);
-};
-
-
+    // 6. 입력창 스왑
+    const tempInput = originInput;
+    setOriginInput(destInput);
+    setDestInput(tempInput);
+  };
 
   // ** 패널 버튼 함수 **
- const handleSetOrigin = () => {
-  if (!selectedStation || !mapInstance.current) return;
+  const handleSetOrigin = () => {
+    if (!selectedStation || !mapInstance.current) return;
 
-  const position = new window.Tmapv2.LatLng(selectedStation.lat, selectedStation.lon);
+    const position = new window.Tmapv2.LatLng(
+      selectedStation.lat,
+      selectedStation.lon
+    );
 
-  // === 이전 출발지 마커 복원 ===
-  if (originMarkerRef.current) {
-    if (originMarkerRef.current.originalIcon) {
-      originMarkerRef.current.setIcon(originMarkerRef.current.originalIcon);
-    }else{
-      originMarkerRef.current.setMap(null)
+    // === 이전 출발지 마커 복원 ===
+    if (originMarkerRef.current) {
+      if (originMarkerRef.current.originalIcon) {
+        originMarkerRef.current.setIcon(originMarkerRef.current.originalIcon);
+      } else {
+        originMarkerRef.current.setMap(null);
+      }
+      originMarkerRef.current = null;
     }
-    originMarkerRef.current = null;
-  }
 
-  // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
-  let targetMarker = null;
+    // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
+    let targetMarker = null;
 
-  const found = markersRef.current.find(
-    (entry) => entry.data.statId === selectedStation.statId
-  );
-  if (found) {
-    targetMarker = found.marker;
-  } else if (
-    centerMarkerRef.current &&
-    centerMarkerRef.current.dataStatId === selectedStation.statId
-  ) {
-    targetMarker = centerMarkerRef.current;
-  }
-
-  if (targetMarker) {
-    // 아이콘 백업하고 출발지 아이콘으로 변경
-    targetMarker.originalIcon = targetMarker.getIcon();
-    targetMarker.setIcon("/img/logos/start.png");
-    originMarkerRef.current = targetMarker;
-  } else {
-    // 마커가 없으면 새로 생성
-    const marker = new window.Tmapv2.Marker({
-      position,
-      map: mapInstance.current,
-      icon: "/img/logos/start.png",
-      iconAnchor: new Tmapv2.Point(18, 48),
-    });
-    originMarkerRef.current = marker;
-  }
-
-  // === 출발지 상태 반영 ===
-  setOriginInput(
-    selectedStation.statNm || selectedStation.name || selectedStation.addr || ""
-  );
-  setMode("route");
-};
-const handleSetDest = () => {
-  if (!selectedStation || !mapInstance.current) return;
-
-  const position = new window.Tmapv2.LatLng(selectedStation.lat, selectedStation.lon);
-
-  // === 이전 출발지 마커 복원 ===
-  if (destMarkerRef.current) {
-    if (destMarkerRef.current.destIcon) {
-      destMarkerRef.current.setIcon(destMarkerRef.current.destIcon);
-    }else{
-      originMarkerRef.current.setMap(null)
+    const found = markersRef.current.find(
+      (entry) => entry.data.statId === selectedStation.statId
+    );
+    if (found) {
+      targetMarker = found.marker;
+    } else if (
+      centerMarkerRef.current &&
+      centerMarkerRef.current.dataStatId === selectedStation.statId
+    ) {
+      targetMarker = centerMarkerRef.current;
     }
-    destMarkerRef.current = null;
-  }
 
-  // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
-  let targetMarker = null;
+    if (targetMarker) {
+      // 아이콘 백업하고 출발지 아이콘으로 변경
+      targetMarker.originalIcon = targetMarker.getIcon();
+      targetMarker.setIcon("/img/logos/start.png");
+      originMarkerRef.current = targetMarker;
+    } else {
+      // 마커가 없으면 새로 생성
+      const marker = new window.Tmapv2.Marker({
+        position,
+        map: mapInstance.current,
+        icon: "/img/logos/start.png",
+        iconAnchor: new Tmapv2.Point(18, 48),
+      });
+      originMarkerRef.current = marker;
+    }
 
-  const found = markersRef.current.find(
-    (entry) => entry.data.statId === selectedStation.statId
-  );
-  if (found) {
-    targetMarker = found.marker;
-  } else if (
-    centerMarkerRef.current &&
-    centerMarkerRef.current.dataStatId === selectedStation.statId
-  ) {
-    targetMarker = centerMarkerRef.current;
-  }
+    // === 출발지 상태 반영 ===
+    setOriginInput(
+      selectedStation.statNm ||
+        selectedStation.name ||
+        selectedStation.addr ||
+        ""
+    );
+    setMode("route");
+  };
+  const handleSetDest = () => {
+    if (!selectedStation || !mapInstance.current) return;
 
-  if (targetMarker) {
-    // 아이콘 백업하고 출발지 아이콘으로 변경
-    targetMarker.destIcon = targetMarker.getIcon();
-    targetMarker.setIcon("/img/logos/end.png");
-    destMarkerRef.current = targetMarker;
-  } else {
-    // 마커가 없으면 새로 생성
-    const marker = new window.Tmapv2.Marker({
-      position,
-      map: mapInstance.current,
-      icon: "/img/logos/end.png",
-      iconAnchor: new Tmapv2.Point(18, 48),
-    });
-    destMarkerRef.current = marker;
-  }
+    const position = new window.Tmapv2.LatLng(
+      selectedStation.lat,
+      selectedStation.lon
+    );
 
-  // === 출발지 상태 반영 ===
-  setDestInput(
-    selectedStation.statNm || selectedStation.name || selectedStation.addr || ""
-  );
-  setMode("route");
-};
+    // === 이전 출발지 마커 복원 ===
+    if (destMarkerRef.current) {
+      if (destMarkerRef.current.destIcon) {
+        destMarkerRef.current.setIcon(destMarkerRef.current.destIcon);
+      } else {
+        originMarkerRef.current.setMap(null);
+      }
+      destMarkerRef.current = null;
+    }
+
+    // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
+    let targetMarker = null;
+
+    const found = markersRef.current.find(
+      (entry) => entry.data.statId === selectedStation.statId
+    );
+    if (found) {
+      targetMarker = found.marker;
+    } else if (
+      centerMarkerRef.current &&
+      centerMarkerRef.current.dataStatId === selectedStation.statId
+    ) {
+      targetMarker = centerMarkerRef.current;
+    }
+
+    if (targetMarker) {
+      // 아이콘 백업하고 출발지 아이콘으로 변경
+      targetMarker.destIcon = targetMarker.getIcon();
+      targetMarker.setIcon("/img/logos/end.png");
+      destMarkerRef.current = targetMarker;
+    } else {
+      // 마커가 없으면 새로 생성
+      const marker = new window.Tmapv2.Marker({
+        position,
+        map: mapInstance.current,
+        icon: "/img/logos/end.png",
+        iconAnchor: new Tmapv2.Point(18, 48),
+      });
+      destMarkerRef.current = marker;
+    }
+
+    // === 출발지 상태 반영 ===
+    setDestInput(
+      selectedStation.statNm ||
+        selectedStation.name ||
+        selectedStation.addr ||
+        ""
+    );
+    setMode("route");
+  };
 
   // 필터 설정 변경 핸들러
   const handleFilterChange = (e) => {
@@ -816,8 +825,8 @@ const handleSetDest = () => {
       markersRef,
       setSelectedStation,
       filterOptions,
-      originMarkerRef,     // ← 반드시 추가
-      destMarkerRef 
+      originMarkerRef, // ← 반드시 추가
+      destMarkerRef
     );
     setActiveDropdown(null);
   };
@@ -863,11 +872,7 @@ const handleSetDest = () => {
 
   // 화면 부분
   return (
-
-         <div style={{ position: "relative" }}>
-      {/* ─── 지도 ─── */}
-      <div id="map_div" ref={mapRef} className="map-container" />
-
+    <div style={{ position: "relative" }}>
       {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
       <div className="search-fixed-container">
         {mode === "search" ? (
@@ -875,10 +880,10 @@ const handleSetDest = () => {
             label="검색"
             value={searchInput}
             onChange={setSearchInput}
-                 onSelect={(item) => {
-        handleSearchSelect(item,"search");
-        // 검색창 자체는 유지(여기선 출발/도착으로 안 바꿈)
-      }}
+            onSelect={(item) => {
+              handleSearchSelect(item, "search");
+              // 검색창 자체는 유지(여기선 출발/도착으로 안 바꿈)
+            }}
           />
         ) : (
           <>
@@ -889,7 +894,9 @@ const handleSetDest = () => {
               onSelect={(item) => handleSearchSelect(item, "origin")}
               // ***자동완성 없이 그냥 남겨두고, 패널 버튼으로 확정***
             />
-            <button className="swap-button" onClick={handleSwap}>🔄</button>
+            <button className="swap-button" onClick={handleSwap}>
+              🔄
+            </button>
             <AutocompleteInput
               label="도착지"
               value={destInput}
@@ -900,458 +907,466 @@ const handleSetDest = () => {
         )}
       </div>
 
-
       {/* 필터 아이콘 및 창 */}
 
-    <div className="home-container">
-      {/* 🔹 2. 햄버거 버튼 추가 */}
-      <button className="hamburger-button" onClick={() => setShowDrawer(true)}>
-        ☰
-      </button>
-      {/* 리스트보기 버튼 */}
+      <div className="home-container">
+        {/* 🔹 2. 햄버거 버튼 추가 */}
+        <button
+          className="hamburger-button"
+          onClick={() => setShowDrawer(true)}
+        >
+          ☰
+        </button>
+        {/* 리스트보기 버튼 */}
+        <button
+          className="seal-button"
+          onClick={handleShowList}
+          style={{ position: "absolute", top: 10, right: 10, zIndex: 1001 }}
+        >
+          <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
+          {showList ? "닫기" : "리스트 보기"}
+        </button>
+        {/* 지도 위 인라인 필터 바 */}
+        <div className="inline-filter-bar">
+          {/* 필터 아이콘 및 창 */}
+          <div className="inline-filter-wrapper">
+            <button
+              onClick={() => toggleDropdown("filter")}
+              className="filter-button"
+            >
+              <FontAwesomeIcon icon={faSliders} />
+            </button>
 
-      <button
-        className="seal-button"
-        onClick={handleShowList}
-        style={{ position: "absolute", top: 10, right: 10, zIndex: 1001 }}
-      >
-        <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
-        {showList ? "닫기" : "리스트 보기"}
-      </button>
-      {/* 지도 위 인라인 필터 바 */}
-      <div className="inline-filter-bar">
-        {/* 필터 아이콘 및 창 */}
-        <div className="inline-filter-wrapper">
-          <button
-            onClick={() => toggleDropdown("filter")}
-            className="filter-button"
-          >
-            <FontAwesomeIcon icon={faSliders} />
-          </button>
+            {activeDropdown === "filter" && (
+              <div className="filter-panel">
+                <h4>충전소 필터</h4>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="freeParking"
+                    checked={filterOptions.freeParking}
+                    onChange={handleFilterChange}
+                  />
+                  무료 주차만 보기
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="noLimit"
+                    checked={filterOptions.noLimit}
+                    onChange={handleFilterChange}
+                  />
+                  이용제한 없는 곳만 보기
+                </label>
 
-          {activeDropdown === "filter" && (
-            <div className="filter-panel">
-              <h4>충전소 필터</h4>
-              <label>
-                <input
-                  type="checkbox"
-                  name="freeParking"
-                  checked={filterOptions.freeParking}
-                  onChange={handleFilterChange}
-                />
-                무료 주차만 보기
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  name="noLimit"
-                  checked={filterOptions.noLimit}
-                  onChange={handleFilterChange}
-                />
-                이용제한 없는 곳만 보기
-              </label>
-
-              {/* === 충전 속도 '이상/이하' 셀렉트 === */}
-              <div
-                style={{ margin: "10px 0 0", fontWeight: 600, fontSize: 16 }}
-              >
-                충전속도
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  margin: "10px 0 0",
-                  flexWrap: "wrap",
-                }}
-              >
-                <select
-                  name="outputMin"
-                  value={filterOptions.outputMin}
-                  onChange={handleOutputSelect}
-                  style={{
-                    padding: "7px 12px",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    marginRight: 2,
-                    minWidth: 70,
-                  }}
+                {/* === 충전 속도 '이상/이하' 셀렉트 === */}
+                <div
+                  style={{ margin: "10px 0 0", fontWeight: 600, fontSize: 16 }}
                 >
-                  {outputOptions.map((v) => (
-                    <option key={v} value={v}>
-                      {v === 0 ? "완속" : `${v}kW`}
-                    </option>
-                  ))}
-                </select>
-                <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
-                <select
-                  name="outputMax"
-                  value={filterOptions.outputMax}
-                  onChange={handleOutputSelect}
-                  style={{
-                    padding: "7px 12px",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    marginLeft: 8,
-                    minWidth: 70,
-                  }}
-                >
-                  {outputOptions.map((v) => (
-                    <option key={v} value={v}>
-                      {v === 0 ? "완속" : `${v}kW`}
-                    </option>
-                  ))}
-                </select>
-                <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
-              </div>
-              <div
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginTop: 7,
-                  marginBottom: 10,
-                }}
-              >
-                <span
-                  style={{
-                    color: "#31ba81",
-                    background: "#ecfaf3",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    padding: "4px 10px",
-                    borderRadius: 12,
-                    display: "inline-block",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {outputText}
-                </span>
-              </div>
-
-              <fieldset>
+                  충전속도
+                </div>
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: 8, // 항목과 버튼 간 간격
+                    gap: 10,
+                    margin: "10px 0 0",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <legend>충전기 타입:</legend>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filterOptions.type.length === chargerTypeOptions.length
-                      }
-                      onChange={(e) =>
-                        setFilterOptions((prev) => ({
-                          ...prev,
-                          type: e.target.checked
-                            ? chargerTypeOptions.map((opt) => opt.code)
-                            : [],
-                        }))
-                      }
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                </div>
-
-                {chargerTypeOptions.map((option) => (
-                  <label
-                    key={option.code}
-                    style={{ display: "block", marginBottom: 4 }}
+                  <select
+                    name="outputMin"
+                    value={filterOptions.outputMin}
+                    onChange={handleOutputSelect}
+                    style={{
+                      padding: "7px 12px",
+                      borderRadius: 8,
+                      fontSize: 16,
+                      marginRight: 2,
+                      minWidth: 70,
+                    }}
                   >
-                    <input
-                      type="checkbox"
-                      name="type"
-                      value={option.code}
-                      checked={filterOptions.type.includes(option.code)}
-                      onChange={handleFilterChange}
-                    />
-                    {" " + option.label}
-                  </label>
-                ))}
-              </fieldset>
-
-              {/* 사업자 필터 섹션 */}
-              <div style={{ marginTop: 12 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filterOptions.provider.length === providerOptions.length
-                      }
-                      onChange={(e) =>
-                        setFilterOptions((prev) => ({
-                          ...prev,
-                          provider: e.target.checked
-                            ? providerOptions.map((opt) => opt.code)
-                            : [],
-                        }))
-                      }
-                    />
-                    <span className="slider round"></span>
-                  </label>
+                    {outputOptions.map((v) => (
+                      <option key={v} value={v}>
+                        {v === 0 ? "완속" : `${v}kW`}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
+                  <select
+                    name="outputMax"
+                    value={filterOptions.outputMax}
+                    onChange={handleOutputSelect}
+                    style={{
+                      padding: "7px 12px",
+                      borderRadius: 8,
+                      fontSize: 16,
+                      marginLeft: 8,
+                      minWidth: 70,
+                    }}
+                  >
+                    {outputOptions.map((v) => (
+                      <option key={v} value={v}>
+                        {v === 0 ? "완속" : `${v}kW`}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
                 </div>
                 <div
                   style={{
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    padding: "8px",
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    marginTop: 4,
+                    width: "100%",
+                    textAlign: "center",
+                    marginTop: 7,
+                    marginBottom: 10,
                   }}
                 >
-                  {providerOptions.map((opt) => (
+                  <span
+                    style={{
+                      color: "#31ba81",
+                      background: "#ecfaf3",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      padding: "4px 10px",
+                      borderRadius: 12,
+                      display: "inline-block",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {outputText}
+                  </span>
+                </div>
+
+                <fieldset>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 8, // 항목과 버튼 간 간격
+                    }}
+                  >
+                    <legend>충전기 타입:</legend>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filterOptions.type.length ===
+                          chargerTypeOptions.length
+                        }
+                        onChange={(e) =>
+                          setFilterOptions((prev) => ({
+                            ...prev,
+                            type: e.target.checked
+                              ? chargerTypeOptions.map((opt) => opt.code)
+                              : [],
+                          }))
+                        }
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
+                  {chargerTypeOptions.map((option) => (
                     <label
-                      key={opt.code}
+                      key={option.code}
                       style={{ display: "block", marginBottom: 4 }}
                     >
                       <input
                         type="checkbox"
-                        name="provider"
-                        value={opt.code}
-                        checked={filterOptions.provider.includes(opt.code)}
+                        name="type"
+                        value={option.code}
+                        checked={filterOptions.type.includes(option.code)}
                         onChange={handleFilterChange}
                       />
-                      {" " + opt.label}
+                      {" " + option.label}
                     </label>
                   ))}
-                </div>
-              </div>
+                </fieldset>
 
-              <button onClick={applyFilters}>필터 적용</button>
+                {/* 사업자 필터 섹션 */}
+                <div style={{ marginTop: 12 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: 16 }}>
+                      사업자
+                    </span>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filterOptions.provider.length ===
+                          providerOptions.length
+                        }
+                        onChange={(e) =>
+                          setFilterOptions((prev) => ({
+                            ...prev,
+                            provider: e.target.checked
+                              ? providerOptions.map((opt) => opt.code)
+                              : [],
+                          }))
+                        }
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+                  <div
+                    style={{
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      padding: "8px",
+                      border: "1px solid #ddd",
+                      borderRadius: 8,
+                      marginTop: 4,
+                    }}
+                  >
+                    {providerOptions.map((opt) => (
+                      <label
+                        key={opt.code}
+                        style={{ display: "block", marginBottom: 4 }}
+                      >
+                        <input
+                          type="checkbox"
+                          name="provider"
+                          value={opt.code}
+                          checked={filterOptions.provider.includes(opt.code)}
+                          onChange={handleFilterChange}
+                        />
+                        {" " + opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={applyFilters}>필터 적용</button>
+              </div>
+            )}
+          </div>{" "}
+          <button onClick={() => toggleDropdown("speed")}>충전속도 ▾</button>
+          {activeDropdown === "speed" && (
+            <div className="dropdown speed-dropdown">
+              <select
+                name="outputMin"
+                value={filterOptions.outputMin}
+                onChange={handleSpeedChange}
+              >
+                {" "}
+                {outputOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v === 0 ? "완속" : `${v}kW`}
+                  </option>
+                ))}
+              </select>
+              <span style={{ margin: "0 8px" }}>~</span>
+              <select
+                name="outputMax"
+                value={filterOptions.outputMax}
+                onChange={handleSpeedChange}
+              >
+                {" "}
+                {outputOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v === 0 ? "완속" : `${v}kW`}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
-        </div>{" "}
-        <button onClick={() => toggleDropdown("speed")}>충전속도 ▾</button>
-        {activeDropdown === "speed" && (
-          <div className="dropdown speed-dropdown">
-            <select
-              name="outputMin"
-              value={filterOptions.outputMin}
-              onChange={handleSpeedChange}
-            >
-              {" "}
-              {outputOptions.map((v) => (
-                <option key={v} value={v}>
-                  {v === 0 ? "완속" : `${v}kW`}
-                </option>
+          <button onClick={() => toggleDropdown("type")}>충전타입 ▾</button>
+          {activeDropdown === "type" && (
+            <div className="dropdown type-dropdown">
+              {chargerTypeOptions.map((opt) => (
+                <label
+                  key={opt.code}
+                  style={{ display: "block", marginBottom: 4 }}
+                >
+                  <input
+                    type="checkbox"
+                    value={opt.code}
+                    checked={filterOptions.type.includes(opt.code)}
+                    onChange={handleInlineTypeChange}
+                  />{" "}
+                  {opt.label}
+                </label>
               ))}
-            </select>
-            <span style={{ margin: "0 8px" }}>~</span>
-            <select
-              name="outputMax"
-              value={filterOptions.outputMax}
-              onChange={handleSpeedChange}
-            >
-              {" "}
-              {outputOptions.map((v) => (
-                <option key={v} value={v}>
-                  {v === 0 ? "완속" : `${v}kW`}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <button onClick={() => toggleDropdown("type")}>충전타입 ▾</button>
-        {activeDropdown === "type" && (
-          <div className="dropdown type-dropdown">
-            {chargerTypeOptions.map((opt) => (
-              <label
-                key={opt.code}
-                style={{ display: "block", marginBottom: 4 }}
-              >
-                <input
-                  type="checkbox"
-                  value={opt.code}
-                  checked={filterOptions.type.includes(opt.code)}
-                  onChange={handleInlineTypeChange}
-                />{" "}
-                {opt.label}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* <h2>전기차 충전소 홈 </h2> */}
-      <div id="map_div" ref={mapRef} className="map-container"></div>
-      <div className="autocomplete-bar">
-        {/* 자동완성 입력 UI */}
-        <AutocompleteInput
-          label="출발지"
-          value={originInput}
-          onChange={setOriginInput}
-          onSelect={handleOriginSelect}
-        />
-        <button className="swap-button" onClick={handleSwap}>
-          🔄
-        </button>
-        <AutocompleteInput
-          label="도착지"
-          value={destInput}
-          onChange={setDestInput}
-          onSelect={handleDestSelect}
-        />
-        <button className="recommend-button" onClick={handleRecommendClick}>
-          경로 추천
-        </button>
-      </div>
-      <div className={`station-info-panel ${selectedStation ? "visible" : ""}`}>
-        {selectedStation && (
-          <>
-            <p>{selectedStation.statNm}</p>
-            <p>{selectedStation.bnm}</p>
-            <p>{selectedStation.addr}</p>
-            <p>{selectedStation.statId}</p>
-            <p>{selectedStation.chgerId}</p>
-            <div className="station-info-buttons">
-              <button onClick={handleSetOrigin}>출발지</button>
-              <button onClick={handleSetDest}>도착지</button>
             </div>
-            <button onClick={() => setSelectedStation(null)}>닫기</button>
-          </>
-        )}
-      </div>
-      {showList && (
+          )}
+        </div>
+        {/* <h2>전기차 충전소 홈 </h2> */}
+        <div id="map_div" ref={mapRef} className="map-container"></div>
+        <div className="autocomplete-bar">
+          {/* 자동완성 입력 UI */}
+          <AutocompleteInput
+            label="출발지"
+            value={originInput}
+            onChange={setOriginInput}
+            onSelect={handleOriginSelect}
+          />
+          <button className="swap-button" onClick={handleSwap}>
+            🔄
+          </button>
+          <AutocompleteInput
+            label="도착지"
+            value={destInput}
+            onChange={setDestInput}
+            onSelect={handleDestSelect}
+          />
+          <button className="recommend-button" onClick={handleRecommendClick}>
+            경로 추천
+          </button>
+        </div>
         <div
-          className="station-list-container"
-          style={{
-            position: "absolute",
-            top: 60,
-            right: 10,
-            width: 300,
-            maxHeight: "70vh",
-            overflowY: "auto",
-            background: "#fff",
-            padding: "12px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            zIndex: 1000,
-          }}
+          className={`station-info-panel ${selectedStation ? "visible" : ""}`}
         >
+          {selectedStation && (
+            <>
+              <p>{selectedStation.statNm}</p>
+              <p>{selectedStation.bnm}</p>
+              <p>{selectedStation.addr}</p>
+              <p>{selectedStation.statId}</p>
+              <p>{selectedStation.chgerId}</p>
+              <div className="station-info-buttons">
+                <button onClick={handleSetOrigin}>출발지</button>
+                <button onClick={handleSetDest}>도착지</button>
+              </div>
+              <button onClick={() => setSelectedStation(null)}>닫기</button>
+            </>
+          )}
+        </div>
+        {showList && (
           <div
+            className="station-list-container"
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              position: "absolute",
+              top: 60,
+              right: 10,
+              width: 300,
+              maxHeight: "70vh",
+              overflowY: "auto",
+              background: "#fff",
+              padding: "12px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              zIndex: 1000,
             }}
           >
-            <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
-            <button
-              onClick={() => setShowList(false)}
+            <div
               style={{
-                background: "none",
-                border: "none",
-                fontSize: "20px",
-                cursor: "pointer",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
-              title="닫기"
             >
-              ❌
-            </button>
-          </div>
-          <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-            {stations.map((st, idx) => (
-              <li
-                key={st.statId + idx}
-                className="station-item"
+              <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
+              <button
+                onClick={() => setShowList(false)}
                 style={{
-                  marginBottom: "12px",
-                  borderBottom: "1px solid #eee",
-                  paddingBottom: "8px",
+                  background: "none",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
                 }}
+                title="닫기"
               >
-                <strong>{st.statNm}</strong> ({st.bnm})<br />
-                {st.addr}
-                <br />
-                점수: {st.recommendScore}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      /* 🔹 3. 사이드 드로어 */
-      {showDrawer && (
-        <div className="side-drawer" ref={drawerRef}>
-          {/* 상단: 프로필 + 로그인 */}
-          <div className="drawer-top-row">
-            <img
-              src="/img/profile-default.png"
-              alt="프로필"
-              className="profile-image"
-            />
-            <div className="login-links">회원가입 | 로그인</div>
+                ❌
+              </button>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+              {stations.map((st, idx) => (
+                <li
+                  key={st.statId + idx}
+                  className="station-item"
+                  style={{
+                    marginBottom: "12px",
+                    borderBottom: "1px solid #eee",
+                    paddingBottom: "8px",
+                  }}
+                >
+                  <strong>{st.statNm}</strong> ({st.bnm})<br />
+                  {st.addr}
+                  <br />
+                  점수: {st.recommendScore}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="drawer-welcome">
-            차지차지와 함께 행복한 하루 보내세요!
-          </div>
-
-          {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
-          <div className="drawer-body">
-            <div className="icon-column">
-              <div onClick={() => setActiveMenu("mypage")}>
-                <img src="/img/icon-profile.png" alt="마이페이지" />
-              </div>
-              <div onClick={() => setActiveMenu("community")}>
-                <img src="/img/icon-community.png" alt="커뮤니티" />
-              </div>
-              <div onClick={() => setActiveMenu("support")}>
-                <img src="/img/icon-support.png" alt="고객센터" />
-              </div>
-              <div onClick={() => setActiveMenu("settings")}>
-                <img src="/img/icon-settings.png" alt="설정" />
-              </div>
+        )}
+        /* 🔹 3. 사이드 드로어 */
+        {showDrawer && (
+          <div className="side-drawer" ref={drawerRef}>
+            {/* 상단: 프로필 + 로그인 */}
+            <div className="drawer-top-row">
+              <img
+                src="/img/profile-default.png"
+                alt="프로필"
+                className="profile-image"
+              />
+              <div className="login-links">회원가입 | 로그인</div>
+            </div>
+            <div className="drawer-welcome">
+              차지차지와 함께 행복한 하루 보내세요!
             </div>
 
-            <div className="text-column">
-              {activeMenu === "mypage" && (
-                <div className="text-list">
-                  <div className="text-item">내 활동</div>
-                  <div className="text-item">내가 쓴 글 보기</div>
-                  <div className="text-item">충전소 제보 내역</div>
+            {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
+            <div className="drawer-body">
+              <div className="icon-column">
+                <div onClick={() => setActiveMenu("mypage")}>
+                  <img src="/img/icon-profile.png" alt="마이페이지" />
                 </div>
-              )}
-              {activeMenu === "community" && (
-                <div className="text-list">
-                  <div className="text-item">자유게시판</div>
-                  <div className="text-item">정보공유</div>
+                <div onClick={() => setActiveMenu("community")}>
+                  <img src="/img/icon-community.png" alt="커뮤니티" />
                 </div>
-              )}
-              {activeMenu === "support" && (
-                <div className="text-list">
-                  <div className="text-item">문의하기</div>
-                  <div className="text-item">자주 묻는 질문</div>
+                <div onClick={() => setActiveMenu("support")}>
+                  <img src="/img/icon-support.png" alt="고객센터" />
                 </div>
-              )}
-              {activeMenu === "settings" && (
-                <div className="text-list">
-                  <div className="text-item">알림 설정</div>
-                  <div className="text-item">계정 설정</div>
+                <div onClick={() => setActiveMenu("settings")}>
+                  <img src="/img/icon-settings.png" alt="설정" />
                 </div>
-              )}
+              </div>
+
+              <div className="text-column">
+                {activeMenu === "mypage" && (
+                  <div className="text-list">
+                    <div className="text-item">내 활동</div>
+                    <div className="text-item">내가 쓴 글 보기</div>
+                    <div className="text-item">충전소 제보 내역</div>
+                  </div>
+                )}
+                {activeMenu === "community" && (
+                  <div className="text-list">
+                    <div className="text-item">자유게시판</div>
+                    <div className="text-item">정보공유</div>
+                  </div>
+                )}
+                {activeMenu === "support" && (
+                  <div className="text-list">
+                    <div className="text-item">문의하기</div>
+                    <div className="text-item">자주 묻는 질문</div>
+                  </div>
+                )}
+                {activeMenu === "settings" && (
+                  <div className="text-list">
+                    <div className="text-item">알림 설정</div>
+                    <div className="text-item">계정 설정</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      <button
-        className="current-location-button"
-        onClick={moveToCurrentLocation}
-        title="현위치로 이동"
-      >
-        <FontAwesomeIcon icon={faLocationArrow} />
-      </button>
+        )}
+        <button
+          className="current-location-button"
+          onClick={moveToCurrentLocation}
+          title="현위치로 이동"
+        >
+          <FontAwesomeIcon icon={faLocationArrow} />
+        </button>
+      </div>
     </div>
   );
 }
