@@ -128,11 +128,22 @@ export default function RecommendRoute() {
     );
 
     const data = await res.json();
-    handleRouteResponse(data);
+    const routeInfo = handleRouteResponse(data);
+
+    if (!routeInfo) return; // 실패 방지
+    const {
+      highwayKm,
+      cityKm,
+      averageWeight,
+      totalDistance,
+      totalTime,
+      totalFare,
+    } = routeInfo;
 
     // 3. 웨이포인트 계산
     let accumulatedDistance = 0;
-    let nextTarget = 10000;
+    const WAYPOINT_INTERVAL = 2000; // 웨이포인트 간격 10km: 10000
+    let nextTarget = WAYPOINT_INTERVAL;
     let waypoints = [];
     let latlngList = [];
 
@@ -181,7 +192,7 @@ export default function RecommendRoute() {
           setWaypointMarkers((prev) => [...prev, marker]);
           // 마커 추가 끝
 
-          nextTarget += 10000;
+          nextTarget += WAYPOINT_INTERVAL; // 웨이포인트 간격
           remaining = nextTarget - accumulatedDistance;
         }
 
@@ -194,7 +205,9 @@ export default function RecommendRoute() {
     // console.log("🚩 웨이포인트:", waypoints);
     console.log("위경도 웨이포인트 리스트:", latlngList);
 
-    // 4. 웨이포인트 근처 충전소 필터링
+    // 4. 충전소 호출 전에 주행 가능 거리 계산
+
+    // 5. 웨이포인트 근처 충전소 호출& 반경기반 필터링
     handleFindNearbyStations(latlngList);
   };
 
@@ -255,7 +268,7 @@ export default function RecommendRoute() {
     });
 
     const data = await res.json();
-    console.log("📍 웨이포인트 기준 10km 필터된 충전소 목록:", data);
+    console.log("📍 웨이포인트 기준 5km 필터된 충전소 목록:", data);
   };
 
   return (
