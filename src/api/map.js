@@ -58,12 +58,10 @@ export const getStationNear = async (
         setSelectedStation?.(station);
       });
 
-
       markersRef.current.push({ data: station, marker: marker });
     });
 
     return stations;
-
   } catch (error) {
     console.error("서버 전송 에러:", error);
     return [];

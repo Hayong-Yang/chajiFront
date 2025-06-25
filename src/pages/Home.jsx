@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { fetchAutocomplete } from "../api/poi";
 import {
@@ -333,6 +334,8 @@ export default function Home() {
   }); // 필터 옵션 상태
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
+
+  const navigate = useNavigate();
 
   // 앱 실행
   useEffect(() => {
@@ -681,6 +684,21 @@ export default function Home() {
     left: 12,
   };
 
+  // 경로추천 버튼
+  const handleRecommendClick = () => {
+    if (!originInput.trim() || !destInput.trim()) {
+      alert("출발지와 도착지를 모두 입력해주세요.");
+      return;
+    }
+    navigate("/recommendRoute", {
+      state: {
+        originInput,
+        destInput,
+        filterOptions,
+      },
+    });
+  };
+
   // 화면 부분
   return (
     <div className="home-container">
@@ -774,6 +792,9 @@ export default function Home() {
           onChange={setDestInput}
           onSelect={handleDestSelect}
         />
+        <button className="recommend-button" onClick={handleRecommendClick}>
+          경로 추천
+        </button>
       </div>
 
       {/* 필터 아이콘 및 창 */}
