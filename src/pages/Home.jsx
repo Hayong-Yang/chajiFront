@@ -892,21 +892,23 @@ export default function Home() {
               }}
             >
               <legend>충전기 타입:</legend>
-              <button
-                type="button"
-                style={{
-                  fontSize: 14,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#555",
-                }}
-                onClick={() =>
-                  setFilterOptions((prev) => ({ ...prev, type: [] }))
-                }
-              >
-                전체 삭제
-              </button>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={
+                    filterOptions.type.length === chargerTypeOptions.length
+                  }
+                  onChange={(e) =>
+                    setFilterOptions((prev) => ({
+                      ...prev,
+                      type: e.target.checked
+                        ? chargerTypeOptions.map((opt) => opt.code)
+                        : [],
+                    }))
+                  }
+                />
+                <span className="slider round"></span>
+              </label>
             </div>
 
             {chargerTypeOptions.map((option) => (
@@ -936,21 +938,23 @@ export default function Home() {
               }}
             >
               <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
-              <button
-                type="button"
-                style={{
-                  fontSize: 14,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#555",
-                }}
-                onClick={() =>
-                  setFilterOptions((prev) => ({ ...prev, provider: [] }))
-                }
-              >
-                전체 삭제
-              </button>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={
+                    filterOptions.provider.length === providerOptions.length
+                  }
+                  onChange={(e) =>
+                    setFilterOptions((prev) => ({
+                      ...prev,
+                      provider: e.target.checked
+                        ? providerOptions.map((opt) => opt.code)
+                        : [],
+                    }))
+                  }
+                />
+                <span className="slider round"></span>
+              </label>
             </div>
             <div
               style={{
@@ -1003,7 +1007,7 @@ export default function Home() {
 
       {showList && (
         <div
-          className="station-list-container" // ✨ 수정됨
+          className="station-list-container"
           style={{
             position: "absolute",
             top: 60,
