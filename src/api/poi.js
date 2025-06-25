@@ -16,4 +16,25 @@ export function moveMapTo(lat, lon) {
   window.map.setZoom(15);
 }
 
+// 좌표 정리 유틸 함수
+export function normalizeCoords(item) {
+  return {
+    ...item,
+    lat: item.lat,
+    lng: item.lon ?? item.lng, // 둘 중 하나 존재 시 lng로 통일
+  };
+}
+export function getStationMeta(item) {
+  return {
+    statId: item.statId ?? `${item.lat}_${item.lon ?? item.lng}`,
+    chgerId: item.chgerId ?? "",
+    statNm: item.statNm || item.name || "이름 없음",
+    addr: item.addr || item.address || "-",
+    lat: item.lat,
+    lon: item.lon ?? item.lng,
+    tel: item.tel || "-",
+    bnm: item.businNm || item.bnm || "기타",
+  };
+}
+
     
