@@ -870,6 +870,20 @@ export default function Home() {
     });
   };
 
+  // === 이상/이하 select 박스 핸들러 ===
+  const handleOutputSelect = (e) => {
+    const { name, value } = e.target;
+    setFilterOptions((prev) => {
+      let newState = { ...prev, [name]: Number(value) };
+      // outputMin(이상) 이 outputMax(이하)보다 크면, 둘을 맞춰줌
+      if (newState.outputMin > newState.outputMax) {
+        if (name === "outputMin") newState.outputMax = newState.outputMin;
+        else newState.outputMin = newState.outputMax;
+      }
+      return newState;
+    });
+  };
+
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
@@ -903,6 +917,9 @@ export default function Home() {
               onChange={setDestInput}
               onSelect={(item) => handleSearchSelect(item, "dest")}
             />
+            <button className="recommend-button" onClick={handleRecommendClick}>
+              경로 추천
+            </button>
           </>
         )}
       </div>
@@ -1199,27 +1216,6 @@ export default function Home() {
         </div>
         {/* <h2>전기차 충전소 홈 </h2> */}
         <div id="map_div" ref={mapRef} className="map-container"></div>
-        <div className="autocomplete-bar">
-          {/* 자동완성 입력 UI */}
-          <AutocompleteInput
-            label="출발지"
-            value={originInput}
-            onChange={setOriginInput}
-            onSelect={handleOriginSelect}
-          />
-          <button className="swap-button" onClick={handleSwap}>
-            🔄
-          </button>
-          <AutocompleteInput
-            label="도착지"
-            value={destInput}
-            onChange={setDestInput}
-            onSelect={handleDestSelect}
-          />
-          <button className="recommend-button" onClick={handleRecommendClick}>
-            경로 추천
-          </button>
-        </div>
         <div
           className={`station-info-panel ${selectedStation ? "visible" : ""}`}
         >
@@ -1296,7 +1292,7 @@ export default function Home() {
             </ul>
           </div>
         )}
-        /* 🔹 3. 사이드 드로어 */
+        {/* 3. 사이드 드로어 */}
         {showDrawer && (
           <div className="side-drawer" ref={drawerRef}>
             {/* 상단: 프로필 + 로그인 */}
