@@ -1,19 +1,13 @@
 import axios from "axios";
 
+axios.defaults.baseURL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
+
 //프론트에서 현재 위치 전송 + 근처 충전소 세팅 함수
 export const setStationNear = async (lat, lon) => {
   try {
-    const response = await fetch("/api/station/setStationNear", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ lat, lon }),
-    });
-
-    if (!response.ok) {
-      throw new Error("요청 실패");
-    }
+    // 수정: fetch -> axios.post 사용
+    await axios.post("/api/station/setStationNear", { lat, lon });
     console.log("서버 setStationNear 성공");
   } catch (e) {
     console.error("setStationNear 오류:", e);
@@ -43,23 +37,18 @@ if (!markersRef?.current || !Array.isArray(markersRef.current)) {
   }
 
   try {
-    const response = await fetch("/api/station/getStationNear", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        lat: centerLat,
-        lon: centerLon,
-        ...filterOptions,
-      }),
+    const response = await axios.post("/api/station/getStationNear", {
+      lat: centerLat,
+      lon: centerLon,
+      freeParking: filterOptions.freeParking,
+      noLimit: filterOptions.noLimit,
+      outputMin: filterOptions.outputMin,
+      outputMax: filterOptions.outputMax,
+      type: filterOptions.type,
+      provider: filterOptions.provider,
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP 오류! 상태코드: ${response.status}`);
-    }
-
-    const stations = await response.json();
+    const stations = response.data;
     console.log("서버 응답:", stations);
 
     // 출발,도착 마커는 따로 관리
@@ -115,8 +104,10 @@ setSelectedStation?.({
      // 이제 entry 형태로 저장
      markersRef.current.push({ data: station, marker: marker });
    });
+
   } catch (error) {
     console.error("서버 전송 에러:", error);
+    return [];
   }
 }; //sendCenterToServer 함수 끝
 

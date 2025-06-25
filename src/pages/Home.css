@@ -1,26 +1,27 @@
 .filter-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1000;
   padding: 8px 12px;
   background-color: white;
   border: 1px solid #ccc;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
 }
 
+/* 패널은 버튼 바로 아래 */
 .filter-panel {
   position: absolute;
-  top: 50px;
-  left: 10px;
+  top: 58px; /* 버튼 아래 간격 */
+  left: 0;
   background-color: white;
   border: 1px solid #aaa;
   border-radius: 6px;
   padding: 15px;
-  z-index: 999;
+  z-index: 1000;
   width: 240px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: "Nanum Pen Script", "Noto Sans KR", sans-serif;
 }
 
 .filter-panel label {
@@ -67,7 +68,20 @@
   min-width: 120px;
 }
 
-/* === Label 스타일 === */
+
+.autocomplete-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ccc;
+  z-index: 99;
+  position: relative;
+}
+/* 라벨 스타일 */
+
 .autocomplete-label {
   font-weight: 600;
   margin-bottom: 6px;
@@ -136,4 +150,437 @@
 
 .swap-button:hover {
   background-color: #ddd;
+}
+
+/* inline 필터 바 */
+/* 전체 필터 바 */
+.inline-filter-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #dff6fd; /* 연한 하늘색 */
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 70, 160, 0.1);
+  font-family: "Nanum Pen Script", cursive; /* 귀여운 필기체 느낌 */
+  font-size: 18px;
+}
+
+/* 필터 버튼 */
+.inline-filter-bar button {
+  background: #fff;
+  color: #0077aa;
+  border: 2px solid #88d4f2;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-weight: bold;
+}
+
+.inline-filter-bar button:hover {
+  background: #c2f0ff;
+  transform: scale(1.05);
+}
+
+/* 드롭다운 공통 */
+.dropdown {
+  position: absolute;
+  top: 58px;
+  left: 0;
+  padding: 10px;
+  background: #ffffff;
+  border: 2px solid #aee4ff;
+  border-radius: 16px;
+  box-shadow: 0 4px 8px rgba(0, 50, 100, 0.15);
+  z-index: 100;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* 충전속도 드롭다운 */
+.speed-dropdown select {
+  padding: 6px;
+  border: 1px solid #b2e0f7;
+  border-radius: 8px;
+  background: #f2fbff;
+  font-size: 16px;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+/* 충전타입 드롭다운 */
+.type-dropdown label {
+  font-size: 16px;
+  font-family: "Noto Sans KR", sans-serif;
+  color: #333;
+}
+
+.type-dropdown input[type="checkbox"] {
+  accent-color: #51bde3;
+  transform: scale(1.2);
+  margin-right: 8px;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 스위치 토글 스타일 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #4caf50;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* ======================= 햄버거 버튼 ======================= */
+
+.hamburger-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 24px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ======================= 사이드 드로어 ======================= */
+
+.side-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 270px;
+  height: 100vh;
+  background: #f5f5f5;
+  padding: 16px 0;
+  z-index: 1100;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* === 상단 프로필 영역 (1열) === */
+.drawer-top-row {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.login-links {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* === 인사말 메시지 === */
+.drawer-welcome {
+  background: #d6ecff;
+  margin: 0 16px 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  color: #333;
+}
+
+/* === 하단 전체 구조: 2열 === */
+.drawer-body {
+  display: flex;
+  flex-direction: row;
+  height: calc(100% - 120px); /* 상단 영역 제외 */
+  box-sizing: border-box;
+}
+
+/* 왼쪽 아이콘 열 */
+.icon-column {
+  width: 64px;
+  background: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 20px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.icon-column div {
+  padding: 18px 0;
+  cursor: pointer;
+}
+
+.icon-column img {
+  width: 28px;
+  height: 28px;
+}
+
+/* 오른쪽 텍스트 열 */
+.text-column {
+  flex: 1;
+  background: white;
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.text-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-item {
+  padding: 12px 0; /* 위아래 간격 */
+  font-size: 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.text-item:last-child {
+  border-bottom: none;
+}
+
+/* 🔵 충전소 정보 패널 개선 스타일 */
+.station-info-panel {
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  color: #033b86;
+  padding: 24px 20px;
+  border-radius: 20px;
+  box-shadow: 0 6px 16px rgba(0, 70, 160, 0.15);
+  background: linear-gradient(to bottom, #e8f3ff, #f6fbff);
+  font-size: 15px;
+  font-weight: 400;
+  text-align: center;
+
+  animation: fadeUp 0.4s ease-out;
+  transition: all 0.3s ease-in-out;
+}
+
+.station-info-panel p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* 제목 (충전소명) 강조 + 아이콘 */
+.station-info-panel p:first-of-type {
+  font-size: 20px;
+  font-weight: 800;
+  color: #002f6c;
+}
+.station-info-panel p:first-of-type::before {
+  content: "⚡ ";
+  font-size: 20px;
+  vertical-align: middle;
+}
+
+/* 사업자명 */
+.station-info-panel p:nth-of-type(2) {
+  font-weight: 600;
+  color: #1a56b3;
+  font-size: 15px;
+}
+
+/* 주소 */
+.station-info-panel p:nth-of-type(3) {
+  font-size: 14px;
+  color: #445b82;
+}
+
+/* ID 정보 */
+.station-info-panel p:nth-of-type(4),
+.station-info-panel p:nth-of-type(5) {
+  font-size: 13px;
+  color: #7885a2;
+}
+
+/* 버튼 스타일 */
+.station-info-buttons button,
+.station-info-panel button {
+  background: linear-gradient(135deg, #3faaff, #036eea);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  margin: 10px 8px 0 8px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 98, 192, 0.3);
+  font-family: "Noto Sans KR", "NanumSquareRound", sans-serif;
+
+  animation: floatPulse 2.5s ease-in-out infinite;
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+/* Hover 시 bounce 느낌 */
+.station-info-buttons button:hover,
+.station-info-panel button:hover {
+  background: linear-gradient(135deg, #036eea, #024ca8);
+  animation: bounce 0.4s ease;
+  transform: scale(1.05);
+}
+
+/* 패널 부드럽게 등장 */
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 클릭감 bounce 효과 */
+@keyframes bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+/* 리스트 보기 아이콘 */
+.seal-button {
+  background: #cbefff; /* 밝은 파랑 톤 */
+  color: #1a3c59;
+  font-family: "DungGeunMo", "Noto Sans KR", sans-serif;
+  font-size: 15px;
+  padding: 10px 18px;
+  border: 2px solid #88ccee;
+  border-radius: 30px;
+  box-shadow: 0 4px 12px rgba(0, 90, 150, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+
+.seal-button .emoji {
+  font-size: 20px;
+  animation: wave 1.5s infinite ease-in-out;
+}
+
+.seal-button:hover {
+  background: #b8e4ff;
+  transform: scale(1.05);
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(10deg);
+  }
+  75% {
+    transform: rotate(-10deg);
+  }
+}
+
+/* 현위치 */
+.current-location-button {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  z-index: 1001;
+
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #33c9aa;
+  background-color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+  color: #33c9aa;
+
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.current-location-button:hover {
+  background-color: #ecfaf3;
+  transform: scale(1.08);
 }
