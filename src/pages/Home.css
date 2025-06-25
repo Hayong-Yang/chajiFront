@@ -1,24 +1,32 @@
-.filter-button {
+.filter-wrapper {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1000;
+  top: 50px;
+  left: 500px;
+  z-index: 1010;
+}
+
+/* 버튼은 relative로 그대로 */
+.filter-button {
   padding: 8px 12px;
   background-color: white;
   border: 1px solid #ccc;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap; /* 줄바꿈 방지 */
+  writing-mode: horizontal-tb; /* 텍스트 가로쓰기 강제 */
 }
 
+/* 패널은 버튼 바로 아래 */
 .filter-panel {
   position: absolute;
-  top: 50px;
-  left: 10px;
+  top: 60px; /* 버튼 아래 간격 */
+  left: 0;
   background-color: white;
   border: 1px solid #aaa;
   border-radius: 6px;
   padding: 15px;
-  z-index: 999;
+  z-index: 1000;
   width: 240px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -161,7 +169,7 @@
   left: 100px; /* 버튼 간격에 맞춰 조정 */
 }
 
-/* ✅ 스위치 토글 스타일 */
+/* 스위치 토글 스타일 */
 .switch {
   position: relative;
   display: inline-block;
@@ -205,4 +213,135 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(20px);
+}
+
+/* ======================= 햄버거 버튼 ======================= */
+
+.hamburger-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 24px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ======================= 사이드 드로어 ======================= */
+
+.side-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 270px;
+  height: 100vh;
+  background: #f5f5f5;
+  padding: 16px 0;
+  z-index: 1100;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* === 상단 프로필 영역 (1열) === */
+.drawer-top-row {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.login-links {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* === 인사말 메시지 === */
+.drawer-welcome {
+  background: #d6ecff;
+  margin: 0 16px 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  color: #333;
+}
+
+/* === 하단 전체 구조: 2열 === */
+.drawer-body {
+  display: flex;
+  flex-direction: row;
+  height: calc(100% - 120px); /* 상단 영역 제외 */
+  box-sizing: border-box;
+}
+
+/* 왼쪽 아이콘 열 */
+.icon-column {
+  width: 64px;
+  background: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 20px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.icon-column div {
+  padding: 18px 0;
+  cursor: pointer;
+}
+
+.icon-column img {
+  width: 28px;
+  height: 28px;
+}
+
+/* 오른쪽 텍스트 열 */
+.text-column {
+  flex: 1;
+  background: white;
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.text-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-item {
+  padding: 12px 0; /* 위아래 간격 */
+  font-size: 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.text-item:last-child {
+  border-bottom: none;
 }

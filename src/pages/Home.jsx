@@ -300,8 +300,10 @@ function AutocompleteInput({ label, value, onChange, onSelect }) {
 
 export default function Home() {
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
-  const [stations, setStations] = useState([]); // 수정: 충전소 리스트
-  const [showList, setShowList] = useState(false); // 수정: 리스트 뷰 토글
+  const [stations, setStations] = useState([]); // 충전소 리스트
+  const [showList, setShowList] = useState(false); // 리스트 뷰 토글
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [activeMenu, setActiveMenu] = useState("home"); // 선택된 메뉴
 
   // 전역 변수
   const centerMarkerRef = useRef(null); // ← 추가: 이동 중심 마커
@@ -317,22 +319,35 @@ export default function Home() {
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
-  // ✨ 추가: 인라인 속도 필터 표시 토글
-  const [showSpeedDropdown, setShowSpeedDropdown] = useState(false); // ⚡ 수정됨
-  // ✨ 추가: 인라인 타입 필터 표시 토글
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false); // ⚡ 수정됨
+  // 인라인 속도 필터 표시 토글
+  const [showSpeedDropdown, setShowSpeedDropdown] = useState(false);
+  // 인라인 타입 필터 표시 토글
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
   const [showFilter, setShowFilter] = useState(false); // 필터 창 표시 여부
   const [filterOptions, setFilterOptions] = useState({
     freeParking: false,
     noLimit: false,
-    outputMin: 0, // ★ 이상
-    outputMax: 350, // ★ 이하
+    outputMin: 0, // 이상
+    outputMax: 350, // 이하
     type: chargerTypeOptions.map((option) => option.code), // 기본 모두 체크
     provider: providerOptions.map((o) => o.code),
   }); // 필터 옵션 상태
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
+  const drawerRef = useRef(null); // 사이드 드로어 영역 참조
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+        setShowDrawer(false);
+      }
+    };
+    if (showDrawer) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDrawer]);
 
   // 앱 실행
   useEffect(() => {
@@ -342,6 +357,13 @@ export default function Home() {
   useEffect(() => {
     filterOptionsRef.current = filterOptions; // filterOptions가 바뀔 때 최신값 저장
   }, [filterOptions]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("showList") === "true") {
+      handleShowList(); // 리스트 자동 표시
+    }
+  }, []);
 
   // 리스트보기 핸들러
   const handleShowList = async () => {
@@ -368,11 +390,11 @@ export default function Home() {
     );
   };
 
-  // ✨ 추가: 속도 드롭다운 토글 핸들러
+  // 속도 드롭다운 토글 핸들러
   const handleSpeedToggle = () => {
     setShowSpeedDropdown((prev) => !prev);
-  }; // ⚡ 수정됨
-  // ✨ 추가: 속도 선택 시 필터 즉시 적용
+  };
+  // 속도 선택 시 필터 즉시 적용
   const handleSpeedChange = (e) => {
     const { name, value } = e.target;
     setFilterOptions((prev) => {
@@ -386,11 +408,11 @@ export default function Home() {
     });
   };
 
-  // ✨ 추가: 타입 드롭다운 토글 핸들러
+  // 타입 드롭다운 토글 핸들러
   const handleTypeToggle = () => {
     setShowTypeDropdown((prev) => !prev);
-  }; // ⚡ 수정됨
-  // ✨ 추가: 타입 체크박스 선택 시 필터 즉시 적용
+  };
+  // 타입 체크박스 선택 시 필터 즉시 적용
   const handleInlineTypeChange = (e) => {
     const { checked, value } = e.target;
     setFilterOptions((prev) => {
@@ -684,7 +706,11 @@ export default function Home() {
   // 화면 부분
   return (
     <div className="home-container">
-      {/* 수정: 맵 위에 고정된 리스트보기 버튼 */}
+      {/* 🔹 2. 햄버거 버튼 추가 */}
+      <button className="hamburger-button" onClick={() => setShowDrawer(true)}>
+        ☰
+      </button>
+      {/* 리스트보기 버튼 */}
       <button
         className="list-button"
         onClick={handleShowList}
@@ -692,24 +718,19 @@ export default function Home() {
       >
         리스트 보기
       </button>
-
-      {/* ✨ 추가: 지도 위 인라인 필터 바 */}
+      {/* 지도 위 인라인 필터 바 */}
       <div className="inline-filter-bar">
         {" "}
-        {/* ⚡ 수정됨 */}
         <button onClick={handleSpeedToggle}>충전속도 ▾</button>{" "}
-        {/* ⚡ 수정됨 */}
-        {showSpeedDropdown /* ⚡ 수정됨 */ && (
+        {showSpeedDropdown && (
           <div className="dropdown speed-dropdown">
             {" "}
-            {/* ⚡ 수정됨 */}
             <select
               name="outputMin"
               value={filterOptions.outputMin}
               onChange={handleSpeedChange}
             >
               {" "}
-              {/* ⚡ 수정됨 */}
               {outputOptions.map((v) => (
                 <option key={v} value={v}>
                   {v === 0 ? "완속" : `${v}kW`}
@@ -723,7 +744,6 @@ export default function Home() {
               onChange={handleSpeedChange}
             >
               {" "}
-              {/* ⚡ 수정됨 */}
               {outputOptions.map((v) => (
                 <option key={v} value={v}>
                   {v === 0 ? "완속" : `${v}kW`}
@@ -732,11 +752,10 @@ export default function Home() {
             </select>
           </div>
         )}
-        <button onClick={handleTypeToggle}>충전타입 ▾</button> {/* ⚡ 수정됨 */}
-        {showTypeDropdown /* ⚡ 수정됨 */ && (
+        <button onClick={handleTypeToggle}>충전타입 ▾</button>
+        {showTypeDropdown && (
           <div className="dropdown type-dropdown">
             {" "}
-            {/* ⚡ 수정됨 */}
             {chargerTypeOptions.map((opt) => (
               <label
                 key={opt.code}
@@ -748,13 +767,12 @@ export default function Home() {
                   checked={filterOptions.type.includes(opt.code)}
                   onChange={handleInlineTypeChange}
                 />{" "}
-                {opt.label} {/* ⚡ 수정됨 */}
+                {opt.label}
               </label>
             ))}
           </div>
         )}
       </div>
-
       {/* <h2>전기차 충전소 홈 </h2> */}
       <div id="map_div" ref={mapRef} className="map-container"></div>
       <div className="autocomplete-bar">
@@ -775,219 +793,219 @@ export default function Home() {
           onSelect={handleDestSelect}
         />
       </div>
-
       {/* 필터 아이콘 및 창 */}
-      <button
-        onClick={() => setShowFilter((prev) => !prev)}
-        className="filter-button"
-      >
-        🔍 필터
-      </button>
+      <div className="filter-wrapper">
+        <button
+          onClick={() => setShowFilter((prev) => !prev)}
+          className="filter-button"
+        >
+          🔍 필터
+        </button>
 
-      {showFilter && (
-        <div className="filter-panel">
-          <h4>충전소 필터</h4>
-          <label>
-            <input
-              type="checkbox"
-              name="freeParking"
-              checked={filterOptions.freeParking}
-              onChange={handleFilterChange}
-            />
-            무료 주차만 보기
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              name="noLimit"
-              checked={filterOptions.noLimit}
-              onChange={handleFilterChange}
-            />
-            이용제한 없는 곳만 보기
-          </label>
+        {showFilter && (
+          <div className="filter-panel">
+            <h4>충전소 필터</h4>
+            <label>
+              <input
+                type="checkbox"
+                name="freeParking"
+                checked={filterOptions.freeParking}
+                onChange={handleFilterChange}
+              />
+              무료 주차만 보기
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                name="noLimit"
+                checked={filterOptions.noLimit}
+                onChange={handleFilterChange}
+              />
+              이용제한 없는 곳만 보기
+            </label>
 
-          {/* === 충전 속도 '이상/이하' 셀렉트 === */}
-          <div style={{ margin: "10px 0 0", fontWeight: 600, fontSize: 16 }}>
-            충전속도
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              margin: "10px 0 0",
-              flexWrap: "wrap",
-            }}
-          >
-            <select
-              name="outputMin"
-              value={filterOptions.outputMin}
-              onChange={handleOutputSelect}
-              style={{
-                padding: "7px 12px",
-                borderRadius: 8,
-                fontSize: 16,
-                marginRight: 2,
-                minWidth: 70,
-              }}
-            >
-              {outputOptions.map((v) => (
-                <option key={v} value={v}>
-                  {v === 0 ? "완속" : `${v}kW`}
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
-            <select
-              name="outputMax"
-              value={filterOptions.outputMax}
-              onChange={handleOutputSelect}
-              style={{
-                padding: "7px 12px",
-                borderRadius: 8,
-                fontSize: 16,
-                marginLeft: 8,
-                minWidth: 70,
-              }}
-            >
-              {outputOptions.map((v) => (
-                <option key={v} value={v}>
-                  {v === 0 ? "완속" : `${v}kW`}
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
-          </div>
-          <div
-            style={{
-              width: "100%",
-              textAlign: "center",
-              marginTop: 7,
-              marginBottom: 10,
-            }}
-          >
-            <span
-              style={{
-                color: "#31ba81",
-                background: "#ecfaf3",
-                fontWeight: 600,
-                fontSize: 14,
-                padding: "4px 10px",
-                borderRadius: 12,
-                display: "inline-block",
-                letterSpacing: 0.5,
-              }}
-            >
-              {outputText}
-            </span>
-          </div>
-
-          <fieldset>
+            {/* === 충전 속도 '이상/이하' 셀렉트 === */}
+            <div style={{ margin: "10px 0 0", fontWeight: 600, fontSize: 16 }}>
+              충전속도
+            </div>
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 8, // 항목과 버튼 간 간격
+                gap: 10,
+                margin: "10px 0 0",
+                flexWrap: "wrap",
               }}
             >
-              <legend>충전기 타입:</legend>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={
-                    filterOptions.type.length === chargerTypeOptions.length
-                  }
-                  onChange={(e) =>
-                    setFilterOptions((prev) => ({
-                      ...prev,
-                      type: e.target.checked
-                        ? chargerTypeOptions.map((opt) => opt.code)
-                        : [],
-                    }))
-                  }
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-
-            {chargerTypeOptions.map((option) => (
-              <label
-                key={option.code}
-                style={{ display: "block", marginBottom: 4 }}
+              <select
+                name="outputMin"
+                value={filterOptions.outputMin}
+                onChange={handleOutputSelect}
+                style={{
+                  padding: "7px 12px",
+                  borderRadius: 8,
+                  fontSize: 16,
+                  marginRight: 2,
+                  minWidth: 70,
+                }}
               >
-                <input
-                  type="checkbox"
-                  name="type"
-                  value={option.code}
-                  checked={filterOptions.type.includes(option.code)}
-                  onChange={handleFilterChange}
-                />
-                {" " + option.label}
-              </label>
-            ))}
-          </fieldset>
-
-          {/* 사업자 필터 섹션 */}
-          <div style={{ marginTop: 12 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={
-                    filterOptions.provider.length === providerOptions.length
-                  }
-                  onChange={(e) =>
-                    setFilterOptions((prev) => ({
-                      ...prev,
-                      provider: e.target.checked
-                        ? providerOptions.map((opt) => opt.code)
-                        : [],
-                    }))
-                  }
-                />
-                <span className="slider round"></span>
-              </label>
+                {outputOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v === 0 ? "완속" : `${v}kW`}
+                  </option>
+                ))}
+              </select>
+              <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
+              <select
+                name="outputMax"
+                value={filterOptions.outputMax}
+                onChange={handleOutputSelect}
+                style={{
+                  padding: "7px 12px",
+                  borderRadius: 8,
+                  fontSize: 16,
+                  marginLeft: 8,
+                  minWidth: 70,
+                }}
+              >
+                {outputOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v === 0 ? "완속" : `${v}kW`}
+                  </option>
+                ))}
+              </select>
+              <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
             </div>
             <div
               style={{
-                maxHeight: "200px",
-                overflowY: "auto",
-                padding: "8px",
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                marginTop: 4,
+                width: "100%",
+                textAlign: "center",
+                marginTop: 7,
+                marginBottom: 10,
               }}
             >
-              {providerOptions.map((opt) => (
+              <span
+                style={{
+                  color: "#31ba81",
+                  background: "#ecfaf3",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  display: "inline-block",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {outputText}
+              </span>
+            </div>
+
+            <fieldset>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8, // 항목과 버튼 간 간격
+                }}
+              >
+                <legend>충전기 타입:</legend>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filterOptions.type.length === chargerTypeOptions.length
+                    }
+                    onChange={(e) =>
+                      setFilterOptions((prev) => ({
+                        ...prev,
+                        type: e.target.checked
+                          ? chargerTypeOptions.map((opt) => opt.code)
+                          : [],
+                      }))
+                    }
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+
+              {chargerTypeOptions.map((option) => (
                 <label
-                  key={opt.code}
+                  key={option.code}
                   style={{ display: "block", marginBottom: 4 }}
                 >
                   <input
                     type="checkbox"
-                    name="provider"
-                    value={opt.code}
-                    checked={filterOptions.provider.includes(opt.code)}
+                    name="type"
+                    value={option.code}
+                    checked={filterOptions.type.includes(option.code)}
                     onChange={handleFilterChange}
                   />
-                  {" " + opt.label}
+                  {" " + option.label}
                 </label>
               ))}
+            </fieldset>
+
+            {/* 사업자 필터 섹션 */}
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filterOptions.provider.length === providerOptions.length
+                    }
+                    onChange={(e) =>
+                      setFilterOptions((prev) => ({
+                        ...prev,
+                        provider: e.target.checked
+                          ? providerOptions.map((opt) => opt.code)
+                          : [],
+                      }))
+                    }
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+              <div
+                style={{
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  padding: "8px",
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  marginTop: 4,
+                }}
+              >
+                {providerOptions.map((opt) => (
+                  <label
+                    key={opt.code}
+                    style={{ display: "block", marginBottom: 4 }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="provider"
+                      value={opt.code}
+                      checked={filterOptions.provider.includes(opt.code)}
+                      onChange={handleFilterChange}
+                    />
+                    {" " + opt.label}
+                  </label>
+                ))}
+              </div>
             </div>
+
+            <button onClick={applyFilters}>필터 적용</button>
           </div>
-
-          <button onClick={applyFilters}>필터 적용</button>
-        </div>
-      )}
-
+        )}
+      </div>
       <div className={`station-info-panel ${selectedStation ? "visible" : ""}`}>
         {selectedStation && (
           <>
@@ -1004,7 +1022,6 @@ export default function Home() {
           </>
         )}
       </div>
-
       {showList && (
         <div
           className="station-list-container"
@@ -1043,6 +1060,69 @@ export default function Home() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      /* 🔹 3. 사이드 드로어 */
+      {showDrawer && (
+        <div className="side-drawer" ref={drawerRef}>
+          {/* 상단: 프로필 + 로그인 */}
+          <div className="drawer-top-row">
+            <img
+              src="/img/profile-default.png"
+              alt="프로필"
+              className="profile-image"
+            />
+            <div className="login-links">회원가입 | 로그인</div>
+          </div>
+          <div className="drawer-welcome">
+            차지차지와 함께 행복한 하루 보내세요!
+          </div>
+
+          {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
+          <div className="drawer-body">
+            <div className="icon-column">
+              <div onClick={() => setActiveMenu("mypage")}>
+                <img src="/img/icon-profile.png" alt="마이페이지" />
+              </div>
+              <div onClick={() => setActiveMenu("community")}>
+                <img src="/img/icon-community.png" alt="커뮤니티" />
+              </div>
+              <div onClick={() => setActiveMenu("support")}>
+                <img src="/img/icon-support.png" alt="고객센터" />
+              </div>
+              <div onClick={() => setActiveMenu("settings")}>
+                <img src="/img/icon-settings.png" alt="설정" />
+              </div>
+            </div>
+
+            <div className="text-column">
+              {activeMenu === "mypage" && (
+                <div className="text-list">
+                  <div className="text-item">내 활동</div>
+                  <div className="text-item">내가 쓴 글 보기</div>
+                  <div className="text-item">충전소 제보 내역</div>
+                </div>
+              )}
+              {activeMenu === "community" && (
+                <div className="text-list">
+                  <div className="text-item">자유게시판</div>
+                  <div className="text-item">정보공유</div>
+                </div>
+              )}
+              {activeMenu === "support" && (
+                <div className="text-list">
+                  <div className="text-item">문의하기</div>
+                  <div className="text-item">자주 묻는 질문</div>
+                </div>
+              )}
+              {activeMenu === "settings" && (
+                <div className="text-list">
+                  <div className="text-item">알림 설정</div>
+                  <div className="text-item">계정 설정</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
