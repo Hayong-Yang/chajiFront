@@ -50,28 +50,28 @@ export const getStationNear = async (
     console.log("서버 응답:", stations);
 
     // 기존 마커 제거
-     markersRef.current.forEach((entry) => entry.marker.setMap(null));
-     markersRef.current = [];
+    markersRef.current.forEach((entry) => entry.marker.setMap(null));
+    markersRef.current = [];
 
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
-   stations.forEach((station) => {
-     const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-     const marker  = new window.Tmapv2.Marker({
-       position:   position,
-       map:        mapInstance.current,
-       icon:       "/img/logos/default.png",
-       iconSize:   new window.Tmapv2.Size(48, 72),
-       iconAnchor: new window.Tmapv2.Point(24, 72),
-     });
+    stations.forEach((station) => {
+      const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+      const marker = new window.Tmapv2.Marker({
+        position: position,
+        map: mapInstance.current,
+        icon: station.logoUrl,
+        iconSize: new window.Tmapv2.Size(48, 72),
+        iconAnchor: new window.Tmapv2.Point(24, 72),
+      });
 
-     marker.addListener("click", () => {
-       mapInstance.current.setCenter(position);
-       setSelectedStation?.(station);
-     });
+      marker.addListener("click", () => {
+        mapInstance.current.setCenter(position);
+        setSelectedStation?.(station);
+      });
 
-     // 이제 entry 형태로 저장
-     markersRef.current.push({ data: station, marker: marker });
-   });
+      // 이제 entry 형태로 저장
+      markersRef.current.push({ data: station, marker: marker });
+    });
   } catch (error) {
     console.error("서버 전송 에러:", error);
   }

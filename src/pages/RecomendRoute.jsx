@@ -6,6 +6,7 @@ export default function RecommendRoute() {
   const [routeResult, setRouteResult] = useState("");
   const [drawnPolylines, setDrawnPolylines] = useState([]);
   const [waypointMarkers, setWaypointMarkers] = useState([]);
+  const [waypointsLatLng, setWaypointsLatLng] = useState([]);
   const startLat = 37.504198,
     startLon = 127.04894;
   const endLat = 35.1631,
@@ -52,7 +53,8 @@ export default function RecommendRoute() {
     setDrawnPolylines([]);
 
     waypointMarkers.forEach((marker) => marker.setMap(null)); // ←마커 테스트 추가
-    setWaypointMarkers([]); // ← 마커 테스트 추가
+    setWaypointMarkers([]); // <- 마커 테스트 추가
+    setWaypointsLatLng([]); // <- 웨이포인트 위경도 리스트 초기화
 
     setRouteResult("");
   };
@@ -97,8 +99,13 @@ export default function RecommendRoute() {
     });
   };
 
+  // ******************************************************
+  // 경로에 맞는 추천소 추천 시작
+  // ******************************************************
   const requestRoute = async () => {
+    // 1. 맵 초기화
     resetMap();
+    // 2. tmap 경로안내 api 호출
     const res = await fetch(
       "https://apis.openapi.sk.com/tmap/routes?version=1&format=json",
       {
@@ -123,10 +130,11 @@ export default function RecommendRoute() {
     const data = await res.json();
     handleRouteResponse(data);
 
-    // 웨이포인트 계산
+    // 3. 웨이포인트 계산
     let accumulatedDistance = 0;
     let nextTarget = 10000;
     let waypoints = [];
+    let latlngList = [];
 
     for (let f of data.features) {
       if (f.geometry.type !== "LineString") continue;
@@ -156,15 +164,19 @@ export default function RecommendRoute() {
           const interpolatedY = y1 + (y2 - y1) * ratio;
           waypoints.push([interpolatedX, interpolatedY]);
 
-          // 🔧 웨이포인트 마커 추가
+          // 웨이포인트 마커 추가
+          // latlng : WGS84GEO 방식 위경도를 지닌 객체
           const latlng = Tmapv2.Projection.convertEPSG3857ToWGS84GEO(
             new Tmapv2.Point(interpolatedX, interpolatedY)
           );
+          //전역 변수로 WGS84GEO 좌표(latlng)들을 저장 -> 충전소 API용도
+          latlngList.push({ lat: latlng._lat, lng: latlng._lng });
+
           const marker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(latlng._lat, latlng._lng),
             map: mapRef.current,
             icon: "/img/logos/default.png", // 원한다면 custom 아이콘 지정
-            iconSize: new Tmapv2.Size(36, 36),
+            iconSize: new Tmapv2.Size(24, 24),
           });
           setWaypointMarkers((prev) => [...prev, marker]);
           // 마커 추가 끝
@@ -176,9 +188,19 @@ export default function RecommendRoute() {
         accumulatedDistance += segmentDistance;
       }
     }
+    //최종 웨이포인트 계산이 끝난 후 저장
+    setWaypointsLatLng(latlngList);
 
-    console.log("🚩 웨이포인트:", waypoints);
+    // console.log("🚩 웨이포인트:", waypoints);
+    console.log("위경도 웨이포인트 리스트:", latlngList);
+
+    // 4. 웨이포인트 근처 충전소 필터링
+    handleFindNearbyStations(latlngList);
   };
+
+  // ******************************************************
+  // 경로에 맞는 추천소 끝!!!!
+  // ******************************************************
 
   const handleRouteResponse = (response) => {
     const resultData = response.features;
@@ -220,6 +242,20 @@ export default function RecommendRoute() {
       3
     )}`;
     setRouteResult(resultText);
+  };
+
+  //웨이포인트 리스트 기반 충전소 필터링 함수
+  const handleFindNearbyStations = async (latlngList) => {
+    const res = await fetch("/api/station/getStationsNearWaypoints", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(latlngList), // ← 전달받은 latlngList 사용
+    });
+
+    const data = await res.json();
+    console.log("📍 웨이포인트 기준 10km 필터된 충전소 목록:", data);
   };
 
   return (
