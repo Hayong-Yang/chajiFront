@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords,getStationMeta } from "../api/poi";
 import axios from "axios";
 
@@ -407,6 +407,8 @@ export default function Home() {
   }
   };
 
+
+  const navigate = useNavigate();
 
   // 앱 실행
   useEffect(() => {
@@ -844,6 +846,21 @@ const handleSetDest = () => {
     centerLonRef.current = position._lng;
   };
 
+  // 경로추천 버튼
+  const handleRecommendClick = () => {
+    if (!originInput.trim() || !destInput.trim()) {
+      alert("출발지와 도착지를 모두 입력해주세요.");
+      return;
+    }
+    navigate("/recommendRoute", {
+      state: {
+        originInput,
+        destInput,
+        filterOptions,
+      },
+    });
+  };
+
   // 화면 부분
   return (
 
@@ -1187,6 +1204,9 @@ const handleSetDest = () => {
           onChange={setDestInput}
           onSelect={handleDestSelect}
         />
+        <button className="recommend-button" onClick={handleRecommendClick}>
+          경로 추천
+        </button>
       </div>
       <div className={`station-info-panel ${selectedStation ? "visible" : ""}`}>
         {selectedStation && (

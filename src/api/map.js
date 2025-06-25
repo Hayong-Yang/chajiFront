@@ -68,6 +68,7 @@ markersRef.current.forEach((entry) => {
     );
 
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
+
    stations.forEach((station) => {
     const statIdStr = station.statId?.toString();
     const isOrigin = originMarkerRef.current?.dataStatId?.toString() === statIdStr;

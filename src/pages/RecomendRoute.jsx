@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import haversineDistance from "../utils/haversineUtil";
+import { useLocation } from "react-router-dom";
 
 export default function RecommendRoute() {
   const mapRef = useRef(null);
@@ -7,23 +9,19 @@ export default function RecommendRoute() {
   const [drawnPolylines, setDrawnPolylines] = useState([]);
   const [waypointMarkers, setWaypointMarkers] = useState([]);
   const [waypointsLatLng, setWaypointsLatLng] = useState([]);
+  const [batteryInfo, setBatteryInfo] = useState({
+    level: 20,
+    capacity: 70,
+    efficiency: 5.0,
+    temperature: 26,
+  });
   const startLat = 37.504198,
     startLon = 127.04894;
   const endLat = 35.1631,
     endLon = 129.1635;
 
-  // 지구 반지름 기반 거리 계산 함수
-  const haversineDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371000;
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  const location = useLocation();
+  const { originInput, destInput, filterOptions } = location.state || {};
 
   useEffect(() => {
     const map = new Tmapv2.Map("map_div", {
@@ -51,11 +49,9 @@ export default function RecommendRoute() {
   const resetMap = () => {
     drawnPolylines.forEach((polyline) => polyline.setMap(null));
     setDrawnPolylines([]);
-
     waypointMarkers.forEach((marker) => marker.setMap(null)); // ←마커 테스트 추가
     setWaypointMarkers([]); // <- 마커 테스트 추가
     setWaypointsLatLng([]); // <- 웨이포인트 위경도 리스트 초기화
-
     setRouteResult("");
   };
 
@@ -128,11 +124,29 @@ export default function RecommendRoute() {
     );
 
     const data = await res.json();
-    handleRouteResponse(data);
+    const routeInfo = handleRouteResponse(data);
+    if (!routeInfo) return; // 실패 방지
+
+    const {
+      highwayKm,
+      cityKm,
+      averageWeight,
+      totalDistance,
+      totalTime,
+      totalFare,
+    } = routeInfo;
+
+    const {
+      level: batteryLevelPercent,
+      capacity: batteryCapacity,
+      efficiency: baseEfficiency,
+      temperature,
+    } = batteryInfo;
 
     // 3. 웨이포인트 계산
     let accumulatedDistance = 0;
-    let nextTarget = 10000;
+    const WAYPOINT_INTERVAL = 2000; // 웨이포인트 간격 10km: 10000
+    let nextTarget = WAYPOINT_INTERVAL;
     let waypoints = [];
     let latlngList = [];
 
@@ -181,7 +195,7 @@ export default function RecommendRoute() {
           setWaypointMarkers((prev) => [...prev, marker]);
           // 마커 추가 끝
 
-          nextTarget += 10000;
+          nextTarget += WAYPOINT_INTERVAL; // 웨이포인트 간격
           remaining = nextTarget - accumulatedDistance;
         }
 
@@ -189,13 +203,44 @@ export default function RecommendRoute() {
       }
     }
     //최종 웨이포인트 계산이 끝난 후 저장
+    const hasHighway = routeInfo.highwayKm > 0; // 고속도로 여부 추가
+
     setWaypointsLatLng(latlngList);
 
     // console.log("🚩 웨이포인트:", waypoints);
     console.log("위경도 웨이포인트 리스트:", latlngList);
 
-    // 4. 웨이포인트 근처 충전소 필터링
-    handleFindNearbyStations(latlngList);
+    // 4. 충전소 호출 전에 주행 가능 거리 계산
+    const tempFactor = temperature <= -10 ? 0.8 : 1.0;
+    const roadFactor = routeInfo.averageWeight || 1.0;
+    const reachableDistance =
+      (batteryLevelPercent / 100) *
+      batteryCapacity *
+      baseEfficiency *
+      tempFactor *
+      roadFactor;
+
+    console.log(
+      "🧮 계산된 주행 가능 거리:",
+      reachableDistance.toFixed(1),
+      "km (온도계수:",
+      tempFactor,
+      "도로계수:",
+      roadFactor,
+      ")"
+    );
+
+    // 5.reachableDistance 안에 속하는 웨이포인트에서만 충전소 호출
+    const reachableCount = Math.floor(
+      (reachableDistance * 1000) / WAYPOINT_INTERVAL
+    );
+    const includedList = latlngList.slice(0, reachableCount);
+
+    console.log("🧮 예상 주행 가능 거리:", reachableDistance.toFixed(1), "km");
+    console.log("🚩 포함된 웨이포인트 수:", includedList.length, "개");
+
+    // 6. 웨이포인트 근처 충전소 호출& 반경기반 필터링
+    handleFindNearbyStations(includedList, hasHighway);
   };
 
   // ******************************************************
@@ -242,24 +287,96 @@ export default function RecommendRoute() {
       3
     )}`;
     setRouteResult(resultText);
+
+    return {
+      highwayKm,
+      cityKm,
+      averageWeight,
+      totalDistance: props.totalDistance,
+      totalTime: props.totalTime,
+      totalFare: props.totalFare,
+    };
   };
 
   //웨이포인트 리스트 기반 충전소 필터링 함수
-  const handleFindNearbyStations = async (latlngList) => {
+  const handleFindNearbyStations = async (latlngList, hasHighway) => {
     const res = await fetch("/api/station/getStationsNearWaypoints", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(latlngList), // ← 전달받은 latlngList 사용
+      body: JSON.stringify({
+        waypoints: latlngList,
+        highway: hasHighway,
+      }), // ← 전달받은 latlngList 사용
     });
 
     const data = await res.json();
-    console.log("📍 웨이포인트 기준 10km 필터된 충전소 목록:", data);
+    console.log("📍 웨이포인트 기준 5km 필터된 충전소 목록:", data);
   };
 
   return (
     <div>
+      <div style={{ marginBottom: "1rem" }}>
+        <h3>🔋 배터리 정보 입력</h3>
+        <label>
+          잔량 (%) :
+          <input
+            type="number"
+            value={batteryInfo.level}
+            onChange={(e) =>
+              setBatteryInfo({ ...batteryInfo, level: Number(e.target.value) })
+            }
+            min={0}
+            max={100}
+          />
+        </label>
+        <br />
+        <label>
+          배터리 용량 (kWh) :
+          <input
+            type="number"
+            value={batteryInfo.capacity}
+            onChange={(e) =>
+              setBatteryInfo({
+                ...batteryInfo,
+                capacity: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+        <br />
+        <label>
+          공인 전비 (km/kWh) :
+          <input
+            type="number"
+            value={batteryInfo.efficiency}
+            onChange={(e) =>
+              setBatteryInfo({
+                ...batteryInfo,
+                efficiency: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+        <br />
+        <label>
+          외부 온도 (℃) :
+          <input
+            type="number"
+            value={batteryInfo.temperature}
+            onChange={(e) =>
+              setBatteryInfo({
+                ...batteryInfo,
+                temperature: Number(e.target.value),
+              })
+            }
+          />
+        </label>
+      </div>
+      <p>출발지: {originInput}</p>
+      <p>도착지: {destInput}</p>
+      <p>필터 적용 수: {filterOptions?.type?.length || 0}</p>
       <select
         onChange={(e) => setSearchOption(e.target.value)}
         value={searchOption}
