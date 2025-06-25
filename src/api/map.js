@@ -27,8 +27,21 @@ export const getStationNear = async (
   mapInstance,
   markersRef,
   setSelectedStation,
-  filterOptions = {}
+  filterOptions = {},
+  originMarkerRef,   
+  destMarkerRef,
+  neworiginMarkerRef,
+  newdestMarkerRef
 ) => {
+    if (!mapInstance?.current) {
+    console.warn("🚨 mapInstance.current가 없습니다!");
+    return;
+  }
+if (!markersRef?.current || !Array.isArray(markersRef.current)) {
+    console.warn("🚨 markersRef.current가 비정상입니다:", markersRef?.current);
+    return;
+  }
+
   try {
     const response = await fetch("/api/station/getStationNear", {
       method: "POST",
@@ -49,25 +62,55 @@ export const getStationNear = async (
     const stations = await response.json();
     console.log("서버 응답:", stations);
 
-    // 기존 마커 제거
-     markersRef.current.forEach((entry) => entry.marker.setMap(null));
-     markersRef.current = [];
+    // 출발,도착 마커는 따로 관리
+markersRef.current.forEach((entry) => {
+  const marker = entry.marker;
+  const isOrigin = marker === originMarkerRef.current;
+  const isDest = marker === destMarkerRef.current;
+  if (!isOrigin && !isDest) {
+    marker.setMap(null); // 일반 마커만 제거
+  }
+});
+
+       markersRef.current = markersRef.current.filter(
+      (entry) =>
+        entry.marker === originMarkerRef.current ||
+        entry.marker === destMarkerRef.current
+    );
 
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
    stations.forEach((station) => {
+    const statIdStr = station.statId?.toString();
+    const isOrigin = originMarkerRef.current?.dataStatId?.toString() === statIdStr;
+    const isDest   = destMarkerRef.current?.dataStatId?.toString() === statIdStr;
+    if (isOrigin || isDest) return;
+    
+    const exists = markersRef.current.some(
+    (e) => e.data.statId?.toString() === statIdStr);
+     if (exists) return;
+
      const position = new window.Tmapv2.LatLng(station.lat, station.lng);
      const marker  = new window.Tmapv2.Marker({
        position:   position,
        map:        mapInstance.current,
-       icon:       "/img/logos/default.png",
+       icon:       station.logoUrl,
        iconSize:   new window.Tmapv2.Size(48, 72),
        iconAnchor: new window.Tmapv2.Point(24, 72),
      });
 
      marker.addListener("click", () => {
        mapInstance.current.setCenter(position);
-       setSelectedStation?.(station);
-     });
+setSelectedStation?.({
+  statId: station.statId,
+  chgerId: station.chgerId,
+  statNm: station.statNm,      // ← 이름 (name 아님)
+  addr:   station.addr,        // ← 주소 (address 아님)
+  lat:    station.lat,
+  lon:    station.lng,         // ← lng를 사용
+  tel:    "-",                 // ← 전화번호 없으니 placeholder라도
+  bnm:    station.businNm      // ← 사업자 이름도 표시하고 싶으면
+});
+    });
 
      // 이제 entry 형태로 저장
      markersRef.current.push({ data: station, marker: marker });
@@ -85,7 +128,9 @@ export const registerMapCenterListener = (
   mapInstanceRef,
   markersRef,
   setSelectedStation,
-  filterOptionsRef
+  filterOptionsRef,
+  originMarkerRef,      // 추가
+  destMarkerRef  
 ) => {
   let debounceTimer = null;
 
@@ -107,7 +152,9 @@ export const registerMapCenterListener = (
         mapInstanceRef,
         markersRef,
         setSelectedStation,
-        filterOptionsRef.current
+        filterOptionsRef.current,
+        originMarkerRef,    
+        destMarkerRef
       );
     }, 300);
   };
@@ -124,7 +171,9 @@ export const trackUserMovement = (
   getStationNear,
   markersRef,
   setSelectedStation,
-  filterOptionsRef
+  filterOptionsRef,
+  originMarkerRef,  
+  destMarkerRef  
 ) => {
   const lastUserUpdateTimeRef = { current: 0 }; // 로컬 ref 대체
   const USER_UPDATE_INTERVAL = 10000; // 10초
@@ -166,7 +215,9 @@ export const trackUserMovement = (
             mapInstanceRef,
             markersRef,
             setSelectedStation,
-            filterOptionsRef.current
+            filterOptionsRef.current,
+            originMarkerRef,    // ← 반드시 추가
+            destMarkerRef 
           );
         } else {
           console.log("사용자 위치 변경: 서버 요청 대기 중...");

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { fetchAutocomplete } from "../api/poi";
+import { fetchAutocomplete, normalizeCoords,getStationMeta } from "../api/poi";
 import {
   setStationNear,
   getStationNear,
@@ -197,7 +197,7 @@ const providerOptions = [
 // =============================
 // 🔹 자동완성 입력 컴포넌트
 // =============================
-function AutocompleteInput({ label, value, onChange, onSelect }) {
+function AutocompleteInput({ label, value="", onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
   const timeoutRef = useRef(null);
@@ -205,12 +205,14 @@ function AutocompleteInput({ label, value, onChange, onSelect }) {
 
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (value.trim().length < 2) {
+    const v = (value || "").trim();
+     if (v.length < 2) {
       setSuggestions([]);
       return;
     }
     timeoutRef.current = setTimeout(async () => {
       const data = await fetchAutocomplete(value.trim());
+      console.log("자동완성 결과:", data);
       setSuggestions(data);
       setShowList(true);
     }, 300);
@@ -271,6 +273,7 @@ export default function Home() {
   const destMarkerRef    = useRef(null); // 도착지 마커
    const originIconUrl = "/img/logos/start.png";
   const destIconUrl   = "/img/logos/end.png";
+  const defaultIconUrl = "/img/logos/default.png";
   const mapRef = useRef(null); //  // 지도를 담을 div DOM 참조용
   const mapInstance = useRef(null); // 생성된 지도 객체(Tmapv2.Map)를 저장
   const userMarkerRef = useRef(null); // 사용자 위치 마커 객체
@@ -280,6 +283,9 @@ export default function Home() {
   const centerLonRef = useRef(127.04894); // 역삼역 경도
   const [originInput, setOriginInput] = useState("");  //출발지 입력값
   const [destInput, setDestInput] = useState("");  //도착지 입력값
+  const [selectedDestStation, setSelectedDestStation] = useState(null);
+  const [selectedOriginStation, setSelectedOriginStation] = useState(null);
+  
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
@@ -309,43 +315,47 @@ export default function Home() {
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
 
-  const handleSearchSelect = (item) => {       //검색 모드 
+  const handleSearchSelect = (item,source = "search") => {
     const map = mapInstance.current;
-    const position = new window.Tmapv2.LatLng(item.lat, item.lon);
+    if (!map) return;
 
+    const coords = normalizeCoords(item);
+    const meta = getStationMeta(coords);
+    const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
+
+    if (centerMarkerRef.current) {
+      centerMarkerRef.current.setMap(null);
+      centerMarkerRef.current = null;
+    }
+
+    const marker = new window.Tmapv2.Marker({
+      position,
+      map,
+      icon: "/img/myLocationIcon/currentLocation.png",
+      iconSize: new window.Tmapv2.Size(48, 72),
+    });
+    marker.dataStatId = meta.statId;
+    marker.originalIcon = marker.getIcon();
+    centerMarkerRef.current = marker;
+
+    marker.addListener("click", () => {
+      setSelectedStation(meta);
+    });
+
+    markersRef.current.push({ data: meta, marker });
+    setSelectedStation(meta);
     map.setCenter(position);
     map.setZoom(15);
 
-    // 기준 마커 생성/이동
-    if (!centerMarkerRef.current) {
-      centerMarkerRef.current = new window.Tmapv2.Marker({
-        position: position,
-        map,
-        icon: "/img/myLocationIcon/currentLocation.png",
-        iconSize: new window.Tmapv2.Size(48, 72),
-      });
-      centerMarkerRef.current.addListener("click", () => {
-        setSelectedStation({
-          statNm: item.name,
-          addr:   item.address,
-          lat:    item.lat,
-          lon:    item.lon,
-          tel:    item.tel,
-        });
-      });
-    } else {
-      centerMarkerRef.current.setPosition(position);
-    }
-
-    // 정보 패널 바로 열기
-    setSelectedStation({
-      statNm: item.name,
-      addr:   item.address,
-      lat:    item.lat,
-      lon:    item.lon,
-      tel:    item.tel,
-    });
+    if (source === "origin") {
+    setOriginInput(meta.statNm);
+    setSelectedOriginStation(meta);
+  } else if (source === "dest") {
+    setDestInput(meta.statNm);
+    setSelectedDestStation(meta);
+  }
   };
+
 
   // 앱 실행
   useEffect(() => {
@@ -388,7 +398,9 @@ export default function Home() {
       mapInstance,
       markersRef,
       setSelectedStation,
-      filterOptions // 필터 옵션 전달
+      filterOptionsRef, // 필터 옵션 전달
+      originMarkerRef,
+      destMarkerRef
     );
 
     console.log("전송할 필터옵션:", filterOptions);
@@ -401,7 +413,9 @@ export default function Home() {
       mapInstance,
       markersRef,
       setSelectedStation,
-      filterOptionsRef // 항상 최신값 유지되도록 ref 전달
+      filterOptionsRef, // 항상 최신값 유지되도록 ref 전달
+      originMarkerRef,      // 추가
+      destMarkerRef  
     );
     // 7. 실시간으로 사용자 움직임 감지
     // + sendCenterToServer 해서 중심 위경도 전달, 충전소 호출
@@ -412,7 +426,9 @@ export default function Home() {
       getStationNear,
       markersRef,
       setSelectedStation,
-      filterOptionsRef
+      filterOptionsRef,
+      originMarkerRef,     
+      destMarkerRef  
     );
   };
 
@@ -445,6 +461,7 @@ export default function Home() {
     const position = new window.Tmapv2.LatLng(lat, lon);
 
     if (!userMarkerRef.current) {
+       console.log("🎯 사용자 마커 새로 생성");
       userMarkerRef.current = new window.Tmapv2.Marker({
         position,
         icon: "/img/myLocationIcon/currentLocation.png",
@@ -452,135 +469,195 @@ export default function Home() {
         map,
       });
     } else {
+      console.log("✅ 사용자 마커 이동");
       userMarkerRef.current.setPosition(position);
     }
   };
   const handleOriginSelect = (item) => {
-    setOriginInput(item.name);
+    const meta = getStationMeta(normalizeCoords(item));
+    setOriginInput(meta.statNm);
     const map = mapInstance.current;
-    if (!map) return;
 
-    // 1) 지도 센터 이동
-    const position = new window.Tmapv2.LatLng(item.lat, item.lon);
+  if (map) {
+    const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
     map.setCenter(position);
     map.setZoom(15);
-
-    // 2) 기준 마커 생성 혹은 이동 + 클릭 리스너
-    if (!originMarkerRef.current) {
-      originMarkerRef.current = new window.Tmapv2.Marker({
-        position: position,
-        map:      map,
-        icon:     "/img/myLocationIcon/currentLocation.png",
-        iconSize: new window.Tmapv2.Size(48, 72),
-      });
-      if (centerMarkerRef.current) {
-      centerMarkerRef.current.setMap(null);
-      centerMarkerRef.current = null;
-    }
-    setSelectedStation(null);
-      originMarkerRef.current.addListener("click", () => {
-        setSelectedStation({
-          statNm: item.name,
-          addr: item.address,
-          lat: item.lat,
-          lon: item.lon,
-          tel: item.tel,
-        });
-      });
-    } else {
-      // 이미 생성된 마커라면 위치만 업데이트
-      centerMarkerRef.current.setPosition(position);
-    }
-
-    // 3) 정보 패널도 바로 열어주기
-    setSelectedStation({
-      statNm: item.name,
-      addr: item.address,
-      lat: item.lat,
-      lon: item.lon,
-      tel: item.tel,
-    });
-  };
-
-  const handleDestSelect = (item) => {
-    setDestInput(item.name);
-    const map = mapInstance.current;
-    if (!map) return;
-
-    const position = new window.Tmapv2.LatLng(item.lat, item.lon);
+    // setOrigin(meta); // 필요 시 위치 상태 저장
+  }
+};
+   const handleDestSelect = (item) => {
+    const meta = getStationMeta(normalizeCoords(item));
+    setDestInput(meta.statNm);
+    
+  const map = mapInstance.current;
+  if (map) {
+    const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
     map.setCenter(position);
     map.setZoom(15);
-
-    if (!destMarkerRef.current) {
-      destMarkerRef.current = new window.Tmapv2.Marker({
-        position: position,
-        map:      map,
-        icon:     "/img/myLocationIcon/currentLocation.png",
-        iconSize: new window.Tmapv2.Size(48, 72),
-      });
-       if (centerMarkerRef.current) {
-      centerMarkerRef.current.setMap(null);
-      centerMarkerRef.current = null;
-    }
-    setSelectedStation(null);
-      centerMardestMarkerRefkerRef.current.addListener("click", () => {
-        setSelectedStation({
-          statNm: item.name,
-          addr: item.address,
-          lat: item.lat,
-          lon: item.lon,
-          tel: item.tel,
-        });
-      });
-    } else {
-      centerMarkerRef.current.setPosition(position);
-    }
-
-    setSelectedStation({
-      statNm: item.name,
-      addr: item.address,
-      lat: item.lat,
-      lon: item.lon,
-      tel: item.tel,
-    });
+  }
+    // setDest(meta); // 필요 시 위치 상태 저장
   };
+
   // 스왑함수
-  const handleSwap = () => {
-    setOriginInput((o) => {
-      setDestInput(o);
-      return destInput;
-    });
-  };
+const handleSwap = () => {
+  if (!originMarkerRef.current || !destMarkerRef.current) return;
+
+  const map = mapInstance.current;
+
+  // 1. 위치 & statId 백업
+  const originPos = originMarkerRef.current.getPosition();
+  const destPos = destMarkerRef.current.getPosition();
+  const originStatId = originMarkerRef.current.dataStatId;
+  const destStatId = destMarkerRef.current.dataStatId;
+
+  // 2. 기존 마커 제거
+  originMarkerRef.current.setMap(null);
+  destMarkerRef.current.setMap(null);
+
+  // 3. 새 마커 생성
+  const newOriginMarker = new window.Tmapv2.Marker({
+    position: destPos,
+    map,
+    icon: "/img/logos/start.png",
+    iconSize: new window.Tmapv2.Size(36, 54),
+    iconAnchor: new window.Tmapv2.Point(18, 54),
+  });
+  newOriginMarker.dataStatId = destStatId;
+
+  const newDestMarker = new window.Tmapv2.Marker({
+    position: originPos,
+    map,
+    icon: "/img/logos/end.png",
+    iconSize: new window.Tmapv2.Size(36, 54),
+    iconAnchor: new window.Tmapv2.Point(18, 54),
+  });
+  newDestMarker.dataStatId = originStatId;
+
+  // 4. 클릭 이벤트 부여
+  newOriginMarker.addListener("click", () => {
+    map.setCenter(newOriginMarker.getPosition());
+  });
+  newDestMarker.addListener("click", () => {
+    map.setCenter(newDestMarker.getPosition());
+  });
+
+  // 5. 레퍼런스 교체
+  originMarkerRef.current = newOriginMarker;
+  destMarkerRef.current = newDestMarker;
+
+  // 6. 입력창 스왑
+  const tempInput = originInput;
+  setOriginInput(destInput);
+  setDestInput(tempInput);
+};
+
+
 
   // ** 패널 버튼 함수 **
-  const handleSetOrigin = () => {
-    if (!selectedStation) return;
-    setOriginInput(selectedStation.statNm);
-    setSelectedStation(null);
-     setMode("route");
-  };
-  const handleSetDest = () => {
-    if (!selectedStation) return;
-    setDestInput(selectedStation.statNm);
-    setSelectedStation(null);
-     setMode("route");
-  };
+ const handleSetOrigin = () => {
+  if (!selectedStation || !mapInstance.current) return;
 
-  
+  const position = new window.Tmapv2.LatLng(selectedStation.lat, selectedStation.lon);
 
-  // === 이상/이하 select 박스 핸들러 ===
-  const handleOutputSelect = (e) => {
-    const { name, value } = e.target;
-    setFilterOptions((prev) => {
-      let newState = { ...prev, [name]: Number(value) };
-      // outputMin(이상) 이 outputMax(이하)보다 크면, 둘을 맞춰줌
-      if (newState.outputMin > newState.outputMax) {
-        if (name === "outputMin") newState.outputMax = newState.outputMin;
-        else newState.outputMin = newState.outputMax;
-      }
-      return newState;
+  // === 이전 출발지 마커 복원 ===
+  if (originMarkerRef.current) {
+    if (originMarkerRef.current.originalIcon) {
+      originMarkerRef.current.setIcon(originMarkerRef.current.originalIcon);
+    }else{
+      originMarkerRef.current.setMap(null)
+    }
+    originMarkerRef.current = null;
+  }
+
+  // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
+  let targetMarker = null;
+
+  const found = markersRef.current.find(
+    (entry) => entry.data.statId === selectedStation.statId
+  );
+  if (found) {
+    targetMarker = found.marker;
+  } else if (
+    centerMarkerRef.current &&
+    centerMarkerRef.current.dataStatId === selectedStation.statId
+  ) {
+    targetMarker = centerMarkerRef.current;
+  }
+
+  if (targetMarker) {
+    // 아이콘 백업하고 출발지 아이콘으로 변경
+    targetMarker.originalIcon = targetMarker.getIcon();
+    targetMarker.setIcon("/img/logos/start.png");
+    originMarkerRef.current = targetMarker;
+  } else {
+    // 마커가 없으면 새로 생성
+    const marker = new window.Tmapv2.Marker({
+      position,
+      map: mapInstance.current,
+      icon: "/img/logos/start.png",
+      iconAnchor: new Tmapv2.Point(18, 48),
     });
-  };
+    originMarkerRef.current = marker;
+  }
+
+  // === 출발지 상태 반영 ===
+  setOriginInput(
+    selectedStation.statNm || selectedStation.name || selectedStation.addr || ""
+  );
+  setMode("route");
+};
+const handleSetDest = () => {
+  if (!selectedStation || !mapInstance.current) return;
+
+  const position = new window.Tmapv2.LatLng(selectedStation.lat, selectedStation.lon);
+
+  // === 이전 출발지 마커 복원 ===
+  if (destMarkerRef.current) {
+    if (destMarkerRef.current.destIcon) {
+      destMarkerRef.current.setIcon(destMarkerRef.current.destIcon);
+    }else{
+      originMarkerRef.current.setMap(null)
+    }
+    destMarkerRef.current = null;
+  }
+
+  // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
+  let targetMarker = null;
+
+  const found = markersRef.current.find(
+    (entry) => entry.data.statId === selectedStation.statId
+  );
+  if (found) {
+    targetMarker = found.marker;
+  } else if (
+    centerMarkerRef.current &&
+    centerMarkerRef.current.dataStatId === selectedStation.statId
+  ) {
+    targetMarker = centerMarkerRef.current;
+  }
+
+  if (targetMarker) {
+    // 아이콘 백업하고 출발지 아이콘으로 변경
+    targetMarker.destIcon = targetMarker.getIcon();
+    targetMarker.setIcon("/img/logos/end.png");
+    destMarkerRef.current = targetMarker;
+  } else {
+    // 마커가 없으면 새로 생성
+    const marker = new window.Tmapv2.Marker({
+      position,
+      map: mapInstance.current,
+      icon: "/img/logos/end.png",
+      iconAnchor: new Tmapv2.Point(18, 48),
+    });
+    destMarkerRef.current = marker;
+  }
+
+  // === 출발지 상태 반영 ===
+  setDestInput(
+    selectedStation.statNm || selectedStation.name || selectedStation.addr || ""
+  );
+  setMode("route");
+};
 
   // 필터 설정 변경 핸들러
   const handleFilterChange = (e) => {
@@ -621,7 +698,9 @@ export default function Home() {
       mapInstance,
       markersRef,
       setSelectedStation,
-      filterOptions
+      filterOptions,
+      originMarkerRef,     // ← 반드시 추가
+      destMarkerRef 
     );
     setShowFilter(false);
   };
@@ -650,24 +729,40 @@ export default function Home() {
 
   // 화면 부분
   return (
-     <div className="home-wrapper" style={{ position: "relative" }}>
-      {/* ▶ 지도 */}
-      <div id="map_div" ref={mapRef} className="map-container"></div>
-      <div className="autocomplete-bar">
-      {/* 자동완성 입력 UI */}
-      <AutocompleteInput
-        label="출발지"
-        value={originInput}
-        onChange={setOriginInput}
-        onSelect={handleOriginSelect}
-      />
-      <button className="swap-button" onClick={handleSwap}>🔄</button>
-      <AutocompleteInput
-        label="도착지"
-        value={destInput}
-        onChange={setDestInput}
-        onSelect={handleDestSelect}
-      />
+         <div style={{ position: "relative" }}>
+      {/* ─── 지도 ─── */}
+      <div id="map_div" ref={mapRef} className="map-container" />
+
+      {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
+      <div className="search-fixed-container">
+        {mode === "search" ? (
+          <AutocompleteInput
+            label="검색"
+            value={searchInput}
+            onChange={setSearchInput}
+                 onSelect={(item) => {
+        handleSearchSelect(item,"search");
+        // 검색창 자체는 유지(여기선 출발/도착으로 안 바꿈)
+      }}
+          />
+        ) : (
+          <>
+            <AutocompleteInput
+              label="출발지"
+              value={originInput}
+              onChange={setOriginInput}
+              onSelect={(item) => handleSearchSelect(item, "origin")}
+              // ***자동완성 없이 그냥 남겨두고, 패널 버튼으로 확정***
+            />
+            <button className="swap-button" onClick={handleSwap}>🔄</button>
+            <AutocompleteInput
+              label="도착지"
+              value={destInput}
+              onChange={setDestInput}
+              onSelect={(item) => handleSearchSelect(item, "dest")}
+            />
+          </>
+        )}
       </div>
 
 
