@@ -837,7 +837,7 @@ export default function Home() {
       ? "전체"
       : `${filterOptions.outputMin}kW 이상 ~ ${filterOptions.outputMax}kW 이하`;
 
-  const moveToCurrentLocation = () => {
+  const moveToCurrentLocation = async () => {
     const map = mapInstance.current;
     const userMarker = userMarkerRef.current;
 
@@ -853,6 +853,18 @@ export default function Home() {
     // 중심 상태 업데이트 (선택)
     centerLatRef.current = position._lat;
     centerLonRef.current = position._lng;
+
+    await setStationNear(position._lat, position._lng);
+    await getStationNear(
+      position._lat,
+      position._lng,
+      mapInstance,
+      markersRef,
+      setSelectedStation,
+      filterOptionsRef.current,
+      originMarkerRef,
+      destMarkerRef
+    );
   };
 
   // 경로추천 버튼
