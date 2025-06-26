@@ -857,12 +857,24 @@ export default function Home() {
 
   // 경로추천 버튼
   const handleRecommendClick = () => {
-    if (!originInput.trim() || !destInput.trim()) {
-      alert("출발지와 도착지를 모두 입력해주세요.");
+    if (!originInput.trim()) {
+      alert("출발지를 입력해주세요.");
       return;
     }
+    if (!destInput.trim()) {
+      alert("도착지를 입력해주세요.");
+      return;
+    }
+    if (!originMarkerRef.current || !destMarkerRef.current) {
+      alert("출발지/도착지 마커가 설정되지 않았습니다.");
+      return;
+    }
+    const originPos = originMarkerRef.current.getPosition();
+    const destPos = destMarkerRef.current.getPosition();
     navigate("/recommendRoute", {
       state: {
+        originCoords: { lat: originPos._lat, lon: originPos._lng },
+        destCoords: { lat: destPos._lat, lon: destPos._lng },
         originInput,
         destInput,
         filterOptions,
