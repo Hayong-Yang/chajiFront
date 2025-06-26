@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 import {
   setStationNear,
@@ -341,6 +342,8 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 }
 
 export default function Home() {
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
   const [showList, setShowList] = useState(false); // 리스트 뷰 토글
@@ -999,7 +1002,7 @@ export default function Home() {
         <button
           className="seal-button"
           onClick={handleShowList}
-          style={{ position: "absolute", top: 10, right: 10, zIndex: 1001 }}
+          style={{ position: "absolute", top: 10, right: 10, zIndex: 999 }}
         >
           <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
           {showList ? "닫기" : "리스트 보기"}
@@ -1277,10 +1280,29 @@ export default function Home() {
         </div>
         {/* <h2>전기차 충전소 홈 </h2> */}
         <div id="map_div" ref={mapRef} className="map-container"></div>
-        <div
+        <motion.div
           className={`station-info-panel ${selectedStation ? "visible" : ""}`}
           ref={infoPanelRef}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            if (info.offset.y < -100) {
+              setIsPanelExpanded(true); // 위로 끌었을 때 확장
+            } else if (info.offset.y > 100) {
+              setIsPanelExpanded(false); // 아래로 끌었을 때 축소
+            }
+          }}
+          animate={{
+            height: selectedStation ? (isPanelExpanded ? "90vh" : "30vh") : "0",
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          style={{ overflowY: "auto" }}
         >
+          <div
+            className="drag-handle"
+            onClick={() => setIsPanelExpanded((prev) => !prev)}
+          ></div>
           {selectedStation && (
             <>
               <p>{selectedStation.statNm}</p>
@@ -1353,6 +1375,14 @@ export default function Home() {
                   })}
               </ul>
 
+              {isPanelExpanded && (
+                <div className="extra-info">
+                  <h4>📍 상세 위치 정보</h4>
+                  <p>운영시간: {selectedStation.useTime || "정보 없음"}</p>
+                  {/* 기타 표시할 정보들 추가 */}
+                </div>
+              )}
+
               <div className="station-info-buttons">
                 <button onClick={handleSetOrigin}>출발지</button>
                 <button onClick={handleSetDest}>도착지</button>
@@ -1360,7 +1390,7 @@ export default function Home() {
               <button onClick={() => setSelectedStation(null)}>닫기</button>
             </>
           )}
-        </div>
+        </motion.div>
         {showList && (
           <div
             className="station-list-container"
@@ -1375,7 +1405,7 @@ export default function Home() {
               padding: "12px",
               borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              zIndex: 1000,
+              zIndex: 999,
             }}
           >
             <div
