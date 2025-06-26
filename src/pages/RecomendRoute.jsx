@@ -9,19 +9,48 @@ export default function RecommendRoute() {
   const [drawnPolylines, setDrawnPolylines] = useState([]);
   const [waypointMarkers, setWaypointMarkers] = useState([]);
   const [waypointsLatLng, setWaypointsLatLng] = useState([]);
+  const [stationMarkers, setStationMarkers] = useState([]);
+  const [selectedPriority, setSelectedPriority] = useState("speed"); // ✅ 기본값 설정
   const [batteryInfo, setBatteryInfo] = useState({
     level: 20,
     capacity: 70,
     efficiency: 5.0,
     temperature: 26,
   });
-  const startLat = 37.504198,
-    startLon = 127.04894;
-  const endLat = 35.1631,
-    endLon = 129.1635;
-
   const location = useLocation();
-  const { originInput, destInput, filterOptions } = location.state || {};
+  const {
+    originInput,
+    destInput,
+    originCoords = {},
+    destCoords = {},
+    filterOptions = {
+      freeParking: false,
+      noLimit: false,
+      outputMin: 0,
+      outputMax: 350,
+      type: [],
+      provider: [],
+    },
+  } = location.state || {};
+
+  const [filters, setFilters] = useState(filterOptions);
+  // const startLat = 37.504198,
+  //   startLon = 127.04894;
+  // const endLat = 35.1631,
+  //   endLon = 129.1635;
+  const startLat = originCoords.lat ?? 37.504198;
+  const startLon = originCoords.lon ?? 127.04894;
+  const endLat = destCoords.lat ?? 35.1631;
+  const endLon = destCoords.lon ?? 129.1635;
+
+  const { freeParking, noLimit, outputMin, outputMax, type, provider } =
+    filterOptions;
+  console.log("무료주차여부:", freeParking);
+  console.log("이용제한여부:", noLimit);
+  console.log("최소충전속도:", outputMin);
+  console.log("최대충전속도:", outputMax);
+  console.log("충전기 타입:", type);
+  console.log("충전사업자:", provider);
 
   useEffect(() => {
     const map = new Tmapv2.Map("map_div", {
@@ -101,7 +130,18 @@ export default function RecommendRoute() {
   const requestRoute = async () => {
     // 1. 맵 초기화
     resetMap();
-    // 2. tmap 경로안내 api 호출
+    // 2. selectedPriority 최신 값 반영
+    const payload = {
+      freeParking: filterOptions.freeParking,
+      noLimit: filterOptions.noLimit,
+      outputMin: filterOptions.outputMin,
+      outputMax: filterOptions.outputMax,
+      type: filterOptions.type,
+      provider: filterOptions.provider,
+      priority: selectedPriority, // 👈 사용자가 선택한 우선순위
+    };
+
+    // 3. tmap 경로안내 api 호출
     const res = await fetch(
       "https://apis.openapi.sk.com/tmap/routes?version=1&format=json",
       {
@@ -143,7 +183,7 @@ export default function RecommendRoute() {
       temperature,
     } = batteryInfo;
 
-    // 3. 웨이포인트 계산
+    // 4. 웨이포인트 계산
     let accumulatedDistance = 0;
     const WAYPOINT_INTERVAL = 2000; // 웨이포인트 간격 10km: 10000
     let nextTarget = WAYPOINT_INTERVAL;
@@ -189,7 +229,7 @@ export default function RecommendRoute() {
           const marker = new Tmapv2.Marker({
             position: new Tmapv2.LatLng(latlng._lat, latlng._lng),
             map: mapRef.current,
-            icon: "/img/logos/default.png", // 원한다면 custom 아이콘 지정
+            icon: "/img/pointer/redMarker.png",
             iconSize: new Tmapv2.Size(24, 24),
           });
           setWaypointMarkers((prev) => [...prev, marker]);
@@ -207,10 +247,9 @@ export default function RecommendRoute() {
 
     setWaypointsLatLng(latlngList);
 
-    // console.log("🚩 웨이포인트:", waypoints);
     console.log("위경도 웨이포인트 리스트:", latlngList);
 
-    // 4. 충전소 호출 전에 주행 가능 거리 계산
+    // 5. 충전소 호출 전에 주행 가능 거리 계산
     const tempFactor = temperature <= -10 ? 0.8 : 1.0;
     const roadFactor = routeInfo.averageWeight || 1.0;
     const reachableDistance =
@@ -230,7 +269,7 @@ export default function RecommendRoute() {
       ")"
     );
 
-    // 5.reachableDistance 안에 속하는 웨이포인트에서만 충전소 호출
+    // 6.reachableDistance 안에 속하는 웨이포인트에서만 충전소 호출
     const reachableCount = Math.floor(
       (reachableDistance * 1000) / WAYPOINT_INTERVAL
     );
@@ -239,8 +278,8 @@ export default function RecommendRoute() {
     console.log("🧮 예상 주행 가능 거리:", reachableDistance.toFixed(1), "km");
     console.log("🚩 포함된 웨이포인트 수:", includedList.length, "개");
 
-    // 6. 웨이포인트 근처 충전소 호출& 반경기반 필터링
-    handleFindNearbyStations(includedList, hasHighway);
+    // 7. 웨이포인트 근처 충전소 호출& 반경기반 필터링
+    handleFindNearbyStations(includedList, hasHighway, payload);
   };
 
   // ******************************************************
@@ -299,7 +338,11 @@ export default function RecommendRoute() {
   };
 
   //웨이포인트 리스트 기반 충전소 필터링 함수
-  const handleFindNearbyStations = async (latlngList, hasHighway) => {
+  const handleFindNearbyStations = async (latlngList, hasHighway, payload) => {
+    // 기존 추천 마커 제거
+    stationMarkers.forEach((marker) => marker.setMap(null));
+    setStationMarkers([]);
+
     const res = await fetch("/api/station/getStationsNearWaypoints", {
       method: "POST",
       headers: {
@@ -308,11 +351,25 @@ export default function RecommendRoute() {
       body: JSON.stringify({
         waypoints: latlngList,
         highway: hasHighway,
-      }), // ← 전달받은 latlngList 사용
+        ...payload, // ✅ 전개 연산자로 편입
+      }),
     });
 
     const data = await res.json();
-    console.log("📍 웨이포인트 기준 5km 필터된 충전소 목록:", data);
+    console.log("📍 최종 충전소 목록:", data);
+
+    const newMarkers = data.map((station) => {
+      const marker = new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(station.lat, station.lng),
+        icon: "/img/logos/default.png",
+        iconSize: new Tmapv2.Size(32, 32),
+        title: station.statNm,
+        map: mapRef.current,
+      });
+
+      return marker;
+    });
+    setStationMarkers(newMarkers);
   };
 
   return (
@@ -374,9 +431,24 @@ export default function RecommendRoute() {
           />
         </label>
       </div>
+
+      <select
+        value={selectedPriority}
+        onChange={(e) => setSelectedPriority(e.target.value)}
+      >
+        <option value="speed">속도 중시</option>
+        <option value="reliability">신뢰성 중시</option>
+        <option value="comfort">편의성 중시</option>
+      </select>
+
       <p>출발지: {originInput}</p>
       <p>도착지: {destInput}</p>
-      <p>필터 적용 수: {filterOptions?.type?.length || 0}</p>
+      <p>
+        출발지 위경도: {originInput} / {originCoords.lat}, {originCoords.lon}
+      </p>
+      <p>
+        도착지 위경도: {destInput} / {destCoords.lat}, {destCoords.lon}
+      </p>
       <select
         onChange={(e) => setSearchOption(e.target.value)}
         value={searchOption}
