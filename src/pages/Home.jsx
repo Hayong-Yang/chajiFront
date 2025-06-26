@@ -14,6 +14,41 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
 import { faLocationArrow } from "@fortawesome/free-solid-svg-icons";
 
+function timeAgo(lastTedt) {
+  if (!lastTedt || lastTedt.length !== 14) return "정보 없음";
+
+  const year = Number(lastTedt.slice(0, 4));
+  const month = Number(lastTedt.slice(4, 6)) - 1;
+  const day = Number(lastTedt.slice(6, 8));
+  const hour = Number(lastTedt.slice(8, 10));
+  const minute = Number(lastTedt.slice(10, 12));
+  const second = Number(lastTedt.slice(12, 14));
+
+  const lastDate = new Date(year, month, day, hour, minute, second);
+  const now = new Date();
+  const diffMs = now - lastDate;
+
+  if (diffMs < 0) return "미래 시간";
+
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffDay / 365);
+
+  if (diffSec < 60) return "방금 전";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  if (diffDay < 7) return `${diffDay}일 전`;
+  if (diffWeek < 4) return `${diffWeek}주 전`;
+  if (diffMonth < 12) return `${diffMonth}개월 전`;
+  if (diffYear >= 1) return `${diffYear}년 전`;
+
+  return "정보 없음";
+}
+
 // === 충전 속도 옵션 배열 ===
 const outputOptions = [0, 50, 100, 150, 200, 250, 300, 350];
 
@@ -353,25 +388,38 @@ export default function Home() {
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
   const drawerRef = useRef(null); // 사이드 드로어 영역 참조
+  const infoPanelRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
-        setShowDrawer(false);
-      }
+      const clickedDrawerOutside =
+        showDrawer &&
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target);
+
+      const clickedInfoPanelOutside =
+        selectedStation &&
+        infoPanelRef.current &&
+        !infoPanelRef.current.contains(e.target);
+
+      if (clickedDrawerOutside) setShowDrawer(false);
+      if (clickedInfoPanelOutside) setSelectedStation(null);
     };
-    if (showDrawer) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDrawer]);
+  }, [showDrawer, selectedStation]);
 
   const handleSearchSelect = (item, source = "search") => {
     const map = mapInstance.current;
     if (!map) return;
 
     const coords = normalizeCoords(item);
-    const meta = getStationMeta(coords);
+    const statId = item.statId || getStationMeta(coords).statId;
+
+    const fullStation = stations.find((st) => st.statId === statId);
+
+    const meta = fullStation || getStationMeta(coords);
     const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
 
     if (centerMarkerRef.current) {
@@ -390,7 +438,8 @@ export default function Home() {
     centerMarkerRef.current = marker;
 
     marker.addListener("click", () => {
-      setSelectedStation(meta);
+      const found = stations.find((st) => st.statId === meta.statId);
+      setSelectedStation(found || meta);
     });
 
     markersRef.current.push({ data: meta, marker });
@@ -1230,14 +1279,80 @@ export default function Home() {
         <div id="map_div" ref={mapRef} className="map-container"></div>
         <div
           className={`station-info-panel ${selectedStation ? "visible" : ""}`}
+          ref={infoPanelRef}
         >
           {selectedStation && (
             <>
               <p>{selectedStation.statNm}</p>
               <p>{selectedStation.bnm}</p>
               <p>{selectedStation.addr}</p>
-              <p>{selectedStation.statId}</p>
-              <p>{selectedStation.chgerId}</p>
+
+              <h4>⚡ 충전기 정보</h4>
+              <ul style={{ textAlign: "left", paddingLeft: 10 }}>
+                {[...(selectedStation.chargers || [])]
+                  .sort((a, b) => Number(a.chgerId) - Number(b.chgerId)) // ID 정렬
+                  .map((c, idx) => {
+                    const typeLabel =
+                      chargerTypeOptions.find((opt) => opt.code === c.chgerType)
+                        ?.label || c.chgerType;
+                    const statusLabel =
+                      {
+                        0: "알 수 없음",
+                        1: "통신 이상",
+                        2: "사용 가능",
+                        3: "충전 중",
+                        4: "운영 중지",
+                        5: "점검 중",
+                      }[c.stat] || "정보 없음";
+
+                    const timeDiff = timeAgo(c.lastTedt); // 이 부분 조건 분기 필요
+
+                    return (
+                      <li key={idx}>
+                        <div className="row">
+                          <span
+                            className={`status ${
+                              Number(c.stat) === 2
+                                ? "active"
+                                : Number(c.stat) === 3
+                                ? "charging"
+                                : ""
+                            }`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        {/* 나머지 정보들 */}
+                        <div className="row">
+                          <span className="label">ID:</span>
+                          <span className="value">{c.chgerId}</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">타입:</span>
+                          <span className="value">{typeLabel}</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">출력:</span>
+                          <span className="value">{c.output}kW</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">
+                            {Number(c.stat) === 3
+                              ? "충전 시작:"
+                              : "마지막 충전 종료:"}
+                          </span>
+                          <span className="value">
+                            {Number(c.stat) === 3 && c.nowTsdt
+                              ? timeAgo(c.nowTsdt)
+                              : timeDiff}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+
               <div className="station-info-buttons">
                 <button onClick={handleSetOrigin}>출발지</button>
                 <button onClick={handleSetDest}>도착지</button>

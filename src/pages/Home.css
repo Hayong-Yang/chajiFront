@@ -68,7 +68,6 @@
   min-width: 120px;
 }
 
-
 .autocomplete-container {
   display: flex;
   flex-direction: row;
@@ -96,7 +95,7 @@
   border: 1px solid #ccc;
   border-radius: 10px;
   outline: none;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: border-color 0.2s ease;
 }
 
@@ -513,6 +512,113 @@ input:checked + .slider:before {
   100% {
     transform: scale(1.05);
   }
+}
+
+/* 충전기 카드 리스트 (가로 스크롤) */
+.station-info-panel ul {
+  display: flex;
+  justify-content: center; /* ✅ 카드가 가운데 오도록 잘 처리됨 */
+  align-items: flex-start;
+  overflow-x: auto;
+  gap: 14px;
+  padding: 12px 10px;
+  white-space: nowrap;
+  scroll-snap-type: x mandatory;
+}
+
+/* 카드 1개 */
+.station-info-panel li {
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 240px;
+  background: linear-gradient(
+    135deg,
+    #e8f6ff,
+    #f9fcff
+  ); /* ✅ 귀여운 배경 잘 적용됨 */
+  border: 2px dashed #a5d9f9;
+  border-radius: 24px;
+  padding: 16px 18px;
+  font-size: 14.5px;
+  scroll-snap-align: start;
+  box-shadow: 0 6px 12px rgba(100, 180, 250, 0.15);
+  color: #034f85;
+  position: relative;
+  font-family: "Nanum Pen Script", "Noto Sans KR", sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  transition: transform 0.2s ease;
+}
+
+.station-info-panel li:hover {
+  transform: scale(1.03);
+}
+
+/* ✅ 🔽 타입 줄바꿈 안 되는 문제 해결용 설정 */
+.station-info-panel li .value {
+  word-break: keep-all; /* 한글 자연스럽게 줄바꿈 */
+  overflow-wrap: anywhere; /* + 같은 기호 뒤에서도 줄바꿈 허용 */
+  white-space: normal; /* 줄바꿈 허용 */
+  line-height: 1.5;
+  color: #06559d;
+  font-weight: 500; /* ✅ 숫자 가독성 향상 (기존 normal → 500) */
+}
+
+/* 라벨 */
+.station-info-panel .label {
+  font-weight: bold;
+  color: #003a6c;
+  display: inline-block;
+  min-width: 92px;
+}
+
+/* 상태 뱃지 */
+.station-info-panel .status {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13.5px;
+  font-weight: bold;
+  border-radius: 20px;
+  background: #eee;
+  color: #555;
+  align-self: flex-start;
+  margin-bottom: 6px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 상태별 컬러 */
+.station-info-panel .status.active {
+  background: #d7ffec;
+  color: #1e9d6a;
+  box-shadow: 0 2px 4px rgba(0, 160, 100, 0.15);
+}
+
+.station-info-panel .status.charging {
+  background: #ffe6f0;
+  color: #d73567;
+  box-shadow: 0 2px 4px rgba(220, 80, 120, 0.15);
+}
+
+/* 스크롤바 */
+.station-info-panel ul::-webkit-scrollbar {
+  height: 8px;
+}
+.station-info-panel ul::-webkit-scrollbar-thumb {
+  background: #a8d8f9;
+  border-radius: 6px;
+}
+.station-info-panel ul::-webkit-scrollbar-track {
+  background: #ecf8ff;
+}
+
+/* 라벨/값 한 줄 세트 */
+.station-info-panel li .row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 /* 리스트 보기 아이콘 */
