@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 import {
   setStationNear,
@@ -13,6 +14,41 @@ import "./home.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
 import { faLocationArrow } from "@fortawesome/free-solid-svg-icons";
+
+function timeAgo(lastTedt) {
+  if (!lastTedt || lastTedt.length !== 14) return "정보 없음";
+
+  const year = Number(lastTedt.slice(0, 4));
+  const month = Number(lastTedt.slice(4, 6)) - 1;
+  const day = Number(lastTedt.slice(6, 8));
+  const hour = Number(lastTedt.slice(8, 10));
+  const minute = Number(lastTedt.slice(10, 12));
+  const second = Number(lastTedt.slice(12, 14));
+
+  const lastDate = new Date(year, month, day, hour, minute, second);
+  const now = new Date();
+  const diffMs = now - lastDate;
+
+  if (diffMs < 0) return "미래 시간";
+
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffDay / 365);
+
+  if (diffSec < 60) return "방금 전";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  if (diffDay < 7) return `${diffDay}일 전`;
+  if (diffWeek < 4) return `${diffWeek}주 전`;
+  if (diffMonth < 12) return `${diffMonth}개월 전`;
+  if (diffYear >= 1) return `${diffYear}년 전`;
+
+  return "정보 없음";
+}
 
 // === 충전 속도 옵션 배열 ===
 const outputOptions = [0, 50, 100, 150, 200, 250, 300, 350];
@@ -306,6 +342,8 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 }
 
 export default function Home() {
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
   const [showList, setShowList] = useState(false); // 리스트 뷰 토글
@@ -354,25 +392,38 @@ export default function Home() {
 
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
   const drawerRef = useRef(null); // 사이드 드로어 영역 참조
+  const infoPanelRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
-        setShowDrawer(false);
-      }
+      const clickedDrawerOutside =
+        showDrawer &&
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target);
+
+      const clickedInfoPanelOutside =
+        selectedStation &&
+        infoPanelRef.current &&
+        !infoPanelRef.current.contains(e.target);
+
+      if (clickedDrawerOutside) setShowDrawer(false);
+      if (clickedInfoPanelOutside) setSelectedStation(null);
     };
-    if (showDrawer) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDrawer]);
+  }, [showDrawer, selectedStation]);
 
   const handleSearchSelect = (item, source = "search") => {
     const map = mapInstance.current;
     if (!map) return;
 
     const coords = normalizeCoords(item);
-    const meta = getStationMeta(coords);
+    const statId = item.statId || getStationMeta(coords).statId;
+
+    const fullStation = stations.find((st) => st.statId === statId);
+
+    const meta = fullStation || getStationMeta(coords);
     const position = new window.Tmapv2.LatLng(meta.lat, meta.lon);
 
     if (centerMarkerRef.current) {
@@ -391,7 +442,8 @@ export default function Home() {
     centerMarkerRef.current = marker;
 
     marker.addListener("click", () => {
-      setSelectedStation(meta);
+      const found = stations.find((st) => st.statId === meta.statId);
+      setSelectedStation(found || meta);
     });
 
     markersRef.current.push({ data: meta, marker });
@@ -409,6 +461,19 @@ export default function Home() {
   };
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const preloadCache = async () => {
+      try {
+        const res = await axios.post("/api/station/cache/loadAllStations");
+        console.log("✅ 서버 캐시 초기화 성공:", res.data);
+      } catch (err) {
+        console.error("🚨 캐시 초기화 실패:", err);
+      }
+    };
+
+    preloadCache(); // 처음 앱 시작할 때 캐시 로딩
+  }, []);
 
   // 앱 실행
   useEffect(() => {
@@ -839,7 +904,7 @@ export default function Home() {
       ? "전체"
       : `${filterOptions.outputMin}kW 이상 ~ ${filterOptions.outputMax}kW 이하`;
 
-  const moveToCurrentLocation = () => {
+  const moveToCurrentLocation = async () => {
     const map = mapInstance.current;
     const userMarker = userMarkerRef.current;
 
@@ -855,16 +920,40 @@ export default function Home() {
     // 중심 상태 업데이트 (선택)
     centerLatRef.current = position._lat;
     centerLonRef.current = position._lng;
+
+    await setStationNear(position._lat, position._lng);
+    await getStationNear(
+      position._lat,
+      position._lng,
+      mapInstance,
+      markersRef,
+      setSelectedStation,
+      filterOptionsRef.current,
+      originMarkerRef,
+      destMarkerRef
+    );
   };
 
   // 경로추천 버튼
   const handleRecommendClick = () => {
-    if (!originInput.trim() || !destInput.trim()) {
-      alert("출발지와 도착지를 모두 입력해주세요.");
+    if (!originInput.trim()) {
+      alert("출발지를 입력해주세요.");
       return;
     }
+    if (!destInput.trim()) {
+      alert("도착지를 입력해주세요.");
+      return;
+    }
+    if (!originMarkerRef.current || !destMarkerRef.current) {
+      alert("출발지/도착지 마커가 설정되지 않았습니다.");
+      return;
+    }
+    const originPos = originMarkerRef.current.getPosition();
+    const destPos = destMarkerRef.current.getPosition();
     navigate("/recommendRoute", {
       state: {
+        originCoords: { lat: originPos._lat, lon: originPos._lng },
+        destCoords: { lat: destPos._lat, lon: destPos._lng },
         originInput,
         destInput,
         filterOptions,
@@ -1020,7 +1109,7 @@ function makeLabelIcon(name, count, lat, lon) {
         <button
           className="seal-button"
           onClick={handleShowList}
-          style={{ position: "absolute", top: 10, right: 10, zIndex: 1001 }}
+          style={{ position: "absolute", top: 10, right: 10, zIndex: 999 }}
         >
           <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
           {showList ? "닫기" : "리스트 보기"}
@@ -1298,16 +1387,109 @@ function makeLabelIcon(name, count, lat, lon) {
         </div>
         {/* <h2>전기차 충전소 홈 </h2> */}
         <div id="map_div" ref={mapRef} className="map-container"></div>
-        <div
+        <motion.div
           className={`station-info-panel ${selectedStation ? "visible" : ""}`}
+          ref={infoPanelRef}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            if (info.offset.y < -100) {
+              setIsPanelExpanded(true); // 위로 끌었을 때 확장
+            } else if (info.offset.y > 100) {
+              setIsPanelExpanded(false); // 아래로 끌었을 때 축소
+            }
+          }}
+          animate={{
+            height: selectedStation ? (isPanelExpanded ? "90vh" : "30vh") : "0",
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          style={{ overflowY: "auto" }}
         >
+          <div
+            className="drag-handle"
+            onClick={() => setIsPanelExpanded((prev) => !prev)}
+          ></div>
           {selectedStation && (
             <>
               <p>{selectedStation.statNm}</p>
               <p>{selectedStation.bnm}</p>
               <p>{selectedStation.addr}</p>
-              <p>{selectedStation.statId}</p>
-              <p>{selectedStation.chgerId}</p>
+
+              <h4>⚡ 충전기 정보</h4>
+              <ul style={{ textAlign: "left", paddingLeft: 10 }}>
+                {[...(selectedStation.chargers || [])]
+                  .sort((a, b) => Number(a.chgerId) - Number(b.chgerId)) // ID 정렬
+                  .map((c, idx) => {
+                    const typeLabel =
+                      chargerTypeOptions.find((opt) => opt.code === c.chgerType)
+                        ?.label || c.chgerType;
+                    const statusLabel =
+                      {
+                        0: "알 수 없음",
+                        1: "통신 이상",
+                        2: "사용 가능",
+                        3: "충전 중",
+                        4: "운영 중지",
+                        5: "점검 중",
+                      }[c.stat] || "정보 없음";
+
+                    const timeDiff = timeAgo(c.lastTedt); // 이 부분 조건 분기 필요
+
+                    return (
+                      <li key={idx}>
+                        <div className="row">
+                          <span
+                            className={`status ${
+                              Number(c.stat) === 2
+                                ? "active"
+                                : Number(c.stat) === 3
+                                ? "charging"
+                                : ""
+                            }`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        {/* 나머지 정보들 */}
+                        <div className="row">
+                          <span className="label">ID:</span>
+                          <span className="value">{c.chgerId}</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">타입:</span>
+                          <span className="value">{typeLabel}</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">출력:</span>
+                          <span className="value">{c.output}kW</span>
+                        </div>
+                        <div className="row">
+                          <span className="label">
+                            {Number(c.stat) === 3
+                              ? "충전 시작:"
+                              : "마지막 충전 종료:"}
+                          </span>
+                          <span className="value">
+                            {Number(c.stat) === 3 && c.nowTsdt
+                              ? timeAgo(c.nowTsdt)
+                              : timeDiff}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+
+              {isPanelExpanded && (
+                <div className="extra-info">
+                  <h4>📍 상세 위치 정보</h4>
+                  <p>운영시간: {selectedStation.useTime || "정보 없음"}</p>
+                  {/* 기타 표시할 정보들 추가 */}
+                </div>
+              )}
+
               <div className="station-info-buttons">
                 <button onClick={handleSetOrigin}>출발지</button>
                 <button onClick={handleSetDest}>도착지</button>
@@ -1315,7 +1497,7 @@ function makeLabelIcon(name, count, lat, lon) {
               <button onClick={() => setSelectedStation(null)}>닫기</button>
             </>
           )}
-        </div>
+        </motion.div>
         {showList && (
           <div
             className="station-list-container"
@@ -1330,7 +1512,7 @@ function makeLabelIcon(name, count, lat, lon) {
               padding: "12px",
               borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              zIndex: 1000,
+              zIndex: 999,
             }}
           >
             <div
