@@ -461,6 +461,19 @@ export default function Home() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const preloadCache = async () => {
+      try {
+        const res = await axios.post("/api/station/cache/loadAllStations");
+        console.log("✅ 서버 캐시 초기화 성공:", res.data);
+      } catch (err) {
+        console.error("🚨 캐시 초기화 실패:", err);
+      }
+    };
+
+    preloadCache(); // 처음 앱 시작할 때 캐시 로딩
+  }, []);
+
   // 앱 실행
   useEffect(() => {
     initTmap({ mapInstance, markersRef });

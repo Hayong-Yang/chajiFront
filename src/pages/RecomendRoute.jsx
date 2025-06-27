@@ -271,13 +271,13 @@ export default function RecommendRoute() {
           //전역 변수로 WGS84GEO 좌표(latlng)들을 저장 -> 충전소 API용도
           latlngList.push({ lat: latlng._lat, lng: latlng._lng });
 
-          const marker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(latlng._lat, latlng._lng),
-            map: mapRef.current,
-            icon: "/img/pointer/redMarker.png",
-            iconSize: new Tmapv2.Size(24, 24),
-          });
-          setWaypointMarkers((prev) => [...prev, marker]);
+          // const marker = new Tmapv2.Marker({
+          //   position: new Tmapv2.LatLng(latlng._lat, latlng._lng),
+          //   map: mapRef.current,
+          //   icon: "/img/pointer/redMarker.png",
+          //   iconSize: new Tmapv2.Size(24, 24),
+          // });
+          // setWaypointMarkers((prev) => [...prev, marker]);
           // 마커 추가 끝
 
           nextTarget += WAYPOINT_INTERVAL; // 웨이포인트 간격
