@@ -68,49 +68,101 @@ markersRef.current.forEach((entry) => {
     );
 
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
+    // !originMarkerRef?.current || !destMarkerRef?.current || 
 
-   stations.forEach((station) => {
-    const statIdStr = station.statId?.toString();
-    const isOrigin = originMarkerRef.current?.dataStatId?.toString() === statIdStr;
-    const isDest   = destMarkerRef.current?.dataStatId?.toString() === statIdStr;
-    if (isOrigin || isDest) return;
-    
-    const exists = markersRef.current.some(
-    (e) => e.data.statId?.toString() === statIdStr);
-     if (exists) return;
+    if (!markersRef?.current || !mapInstance?.current) {
+  console.warn("❗ 하나 이상의 ref가 초기화되지 않았습니다.");
+  return;
+}
+stations.forEach((station) => {
+  const statIdStr = station.statId?.toString();
 
-     const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-     const marker  = new window.Tmapv2.Marker({
-       position:   position,
-       map:        mapInstance.current,
-       icon:       station.logoUrl,
-       iconSize:   new window.Tmapv2.Size(48, 72),
-       iconAnchor: new window.Tmapv2.Point(24, 72),
-     });
+  const isOrigin = originMarkerRef?.current?.dataStatId?.toString() === statIdStr;
+  const isDest   = destMarkerRef?.current?.dataStatId?.toString() === statIdStr;
+  if (isOrigin || isDest) return;
 
-     marker.addListener("click", () => {
-       mapInstance.current.setCenter(position);
-setSelectedStation?.({
-  statId: station.statId,
-  chgerId: station.chgerId,
-  statNm: station.statNm,      // ← 이름 (name 아님)
-  addr:   station.addr,        // ← 주소 (address 아님)
-  lat:    station.lat,
-  lon:    station.lng,         // ← lng를 사용
-  tel:    "-",                 // ← 전화번호 없으니 placeholder라도
-  bnm:    station.businNm      // ← 사업자 이름도 표시하고 싶으면
-});
+  const exists = markersRef.current.some(
+    (e) => e.data?.statId?.toString() === statIdStr
+  );
+  if (exists) return;
+
+  const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+  const marker = new window.Tmapv2.Marker({
+    position,
+    map: mapInstance.current,
+    icon: station.logoUrl,
+    iconSize: new window.Tmapv2.Size(48, 72),
+    iconAnchor: new window.Tmapv2.Point(24, 72),
+  });
+
+  marker.data = { statId: station.statId };
+  markersRef.current.push({ marker }); // ✅ 객체로 넣어야 forEach에서 .marker 접근 가능
+
+  marker.addListener("click", () => {
+    mapInstance.current.setCenter(position);
+    setSelectedStation?.({
+      statId: station.statId,
+      chgerId: station.chgerId,
+      statNm: station.statNm,
+      addr: station.addr,
+      lat: station.lat,
+      lon: station.lng,
+      tel: "-",
+      bnm: station.businNm,
     });
+  });
+  });
+  
 
-     // 이제 entry 형태로 저장
-     markersRef.current.push({ data: station, marker: marker });
-   });
+
+//    stations.forEach((station) => {
+//     const statIdStr = station.statId?.toString();
+//     const isOrigin = originMarkerRef.current?.dataStatId?.toString() === statIdStr;
+//     const isDest   = destMarkerRef.current?.dataStatId?.toString() === statIdStr;
+//     if (isOrigin || isDest) return;
+    
+//     const exists = markersRef.current.some(
+//     (e) => e.data.statId?.toString() === statIdStr);
+//      if (exists) return;
+
+//      const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+//      const marker  = new window.Tmapv2.Marker({
+//        position:   position,
+//        map:        mapInstance.current,
+//        icon:       station.logoUrl,
+//        iconSize:   new window.Tmapv2.Size(48, 72),
+//        iconAnchor: new window.Tmapv2.Point(24, 72),
+//      });
+
+//      marker.addListener("click", () => {
+//        mapInstance.current.setCenter(position);
+// setSelectedStation?.({
+//   statId: station.statId,
+//   chgerId: station.chgerId,
+//   statNm: station.statNm,      // ← 이름 (name 아님)
+//   addr:   station.addr,        // ← 주소 (address 아님)
+//   lat:    station.lat,
+//   lon:    station.lng,         // ← lng를 사용
+//   tel:    "-",                 // ← 전화번호 없으니 placeholder라도
+//   bnm:    station.businNm      // ← 사업자 이름도 표시하고 싶으면
+// });
+//     });
+
+//      // 이제 entry 형태로 저장
+//      marker.data = { statId: station.statId };
+//   markersRef.current.push(marker);
+//    });
 
   } catch (error) {
     console.error("서버 전송 에러:", error);
     return [];
   }
 }; //sendCenterToServer 함수 끝
+
+
+
+
+
 
 //***드래그, 줌, 이동 등 모든 조작 끝난 후 화면 중심 위도 경도 구하기 함수***
 export const registerMapCenterListener = (

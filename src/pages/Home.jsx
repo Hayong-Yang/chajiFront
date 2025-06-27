@@ -332,6 +332,7 @@ export default function Home() {
   const [destInput, setDestInput] = useState(""); //도착지 입력값
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
+  const zoomMarkers = useRef([]);
 
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
@@ -481,7 +482,7 @@ export default function Home() {
       return next;
     });
   };
-
+  
   const initTmap = async () => {
     // 1. 현재 위치 얻기
     try {
@@ -546,6 +547,7 @@ export default function Home() {
       originMarkerRef,
       destMarkerRef
     );
+    onMapReady();
   };
 
   // ***현재 위치 구하는 함수***
@@ -884,6 +886,86 @@ export default function Home() {
     });
   };
 
+  // 지도 Zoomin out //
+const onMapReady = () => {
+  const map = mapInstance.current;
+  if (!map) return;
+
+  // 🔄 줌 데이터 불러오기
+  const fetchZoomData = async () => {
+    const center = map.getCenter();
+    const lat = center._lat;
+    const lng = center._lng; 
+    const zoom = map.getZoom();
+
+    console.log("요청 - 줌:", zoom, "중심:", center);
+
+    try {
+      const res = await fetch(`/api/zoom/summary?lat=${lat}&lon=${lng}&zoomLevel=${zoom}`);
+      if (!res.ok) {
+        console.error("🚨 서버 응답 실패:", res.status, res.statusText);
+        return;
+      }
+
+      const json = await res.json();
+      if (!Array.isArray(json)) {
+        console.error("🚨 데이터가 배열이 아님:", json);
+        return;
+      }
+
+      updateZoomMarkers(json, zoom);
+    } catch (e) {
+      console.error("줌 데이터 요청 실패:", e);
+    }
+  };
+
+  // ✅ 맵 초기화 시 요청
+  fetchZoomData();
+
+  // ✅ 줌 변경 & 드래그 종료 시 재요청
+  map.addListener("zoom_changed", fetchZoomData);
+  map.addListener("dragend", fetchZoomData);
+};
+
+// ✅ 숫자 마커 업데이트
+function updateZoomMarkers(data, zoom) {
+    zoomMarkers.current.forEach(marker => marker.setMap(null));
+  zoomMarkers.current = [];
+
+  console.log("📦 받은 데이터:", data);
+  data.forEach(item => { console.log("📍 요약 마커 확인:", JSON.stringify(item))
+    if (!item.lat || !item.lng || !item.name || !item.count) 
+      console.warn("❌ 유효하지 않은 마커 데이터:", item);
+    return; 
+
+   const overlay = makeLabelIcon(item.name, item.count, item.lat, item.lng);
+    zoomMarkers.current.push(overlay);
+  });
+}
+
+// ✅ 행정단위 요약 마커 (이름 + 개수)
+function makeLabelIcon(name, count, lat, lon) {
+  const html = `
+    <div style="
+      background:#3182f6;
+      color:white;
+      font-weight:bold;
+      padding:6px 10px;
+      border-radius:20px;
+      font-size:13px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    ">
+      ${name} ${count}개
+    </div>
+  `;
+  return new window.Tmapv2.CustomOverlay({
+    position: new window.Tmapv2.LatLng(lat, lon),
+    content: html,
+    map: mapInstance.current,
+  });
+
+}
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
