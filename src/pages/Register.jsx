@@ -12,7 +12,7 @@ export default function Register() {
         try {
             await registerUser({ userId, password, userName });
             setMessage("회원가입 성공😁");
-            navigate("/home");
+            navigate("/login");
         } catch (e) {
             setMessage("회원가입 실패😱");
         }

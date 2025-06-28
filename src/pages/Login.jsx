@@ -11,8 +11,8 @@ export default function Login() {
     const handleLogin = async () => {
         try {
             const token = await loginUser(userId, password);
-            localStorage.setItem("token", token);
-            navigate("/home");
+            localStorage.setItem("accessToken", token);
+            navigate("/carregister");
         } catch (e) {
             setMessage("로그인 실패 😱");
         }
