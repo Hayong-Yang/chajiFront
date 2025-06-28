@@ -1,4 +1,5 @@
 import axios from "axios";
+import { fetchChargerFee } from "../api/fee";
 
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
@@ -91,9 +92,24 @@ export const getStationNear = async (
         iconAnchor: new window.Tmapv2.Point(24, 72),
       });
 
-      marker.addListener("click", () => {
+      marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
-        setSelectedStation?.(station);
+
+        // 요금 정보 불러오기
+        if (!station.busiId) {
+          console.warn("🚨 busiId 없음, 요금 정보 생략", station);
+          setSelectedStation(station);
+          return;
+        }
+
+        try {
+          const feeInfo = await fetchChargerFee(station.busiId);
+          console.log("✅ 요금 정보 가져옴:", feeInfo);
+          setSelectedStation({ ...station, feeInfo });
+        } catch (error) {
+          console.warn("❌ 요금 정보 가져오기 실패:", error);
+          setSelectedStation(station);
+        }
       });
 
       // 이제 entry 형태로 저장

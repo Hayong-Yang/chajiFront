@@ -343,6 +343,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 
 export default function Home() {
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
@@ -1328,11 +1329,51 @@ export default function Home() {
             className="drag-handle"
             onClick={() => setIsPanelExpanded((prev) => !prev)}
           ></div>
+
           {selectedStation && (
             <>
               <p>{selectedStation.statNm}</p>
+              <button
+                className={`favorite-button ${isFavorite ? "on" : ""}`}
+                onClick={() => setIsFavorite((prev) => !prev)}
+                title="즐겨찾기"
+              >
+                {isFavorite ? "⭐" : "☆"}
+              </button>
               <p>{selectedStation.bnm}</p>
               <p>{selectedStation.addr}</p>
+
+              <h4>💰 충전 요금</h4>
+              {selectedStation.feeInfo &&
+              (selectedStation.feeInfo.fastMemberPrice != null ||
+                selectedStation.feeInfo.fastNonmemberPrice != null ||
+                selectedStation.feeInfo.lowMemberPrice != null ||
+                selectedStation.feeInfo.lowNonmemberPrice != null) ? (
+                <ul style={{ paddingLeft: 10 }}>
+                  <li>
+                    급속 요금 (회원):{" "}
+                    {selectedStation.feeInfo.fastMemberPrice ?? "정보 없음"}
+                    원/kWh
+                  </li>
+                  <li>
+                    급속 요금 (비회원):{" "}
+                    {selectedStation.feeInfo.fastNonmemberPrice ?? "정보 없음"}
+                    원/kWh
+                  </li>
+                  <li>
+                    완속 요금 (회원):{" "}
+                    {selectedStation.feeInfo.lowMemberPrice ?? "정보 없음"}
+                    원/kWh
+                  </li>
+                  <li>
+                    완속 요금 (비회원):{" "}
+                    {selectedStation.feeInfo.lowNonmemberPrice ?? "정보 없음"}
+                    원/kWh
+                  </li>
+                </ul>
+              ) : (
+                <p>요금 정보 없음</p>
+              )}
 
               <h4>⚡ 충전기 정보</h4>
               <ul style={{ textAlign: "left", paddingLeft: 10 }}>
@@ -1404,6 +1445,20 @@ export default function Home() {
                 <div className="extra-info">
                   <h4>📍 상세 위치 정보</h4>
                   <p>운영시간: {selectedStation.useTime || "정보 없음"}</p>
+                  <p>
+                    운영기관 연락처: {selectedStation.busiCall || "정보 없음"}
+                  </p>
+                  <p>
+                    주차료 :{" "}
+                    {selectedStation.parkingFree === "Y"
+                      ? "무료"
+                      : selectedStation.parkingFree === "N"
+                      ? "유료"
+                      : "정보 없음"}
+                  </p>
+                  <p>
+                    이용자 제한 : {selectedStation.limitDetail || "정보 없음"}
+                  </p>
                   {/* 기타 표시할 정보들 추가 */}
                 </div>
               )}
