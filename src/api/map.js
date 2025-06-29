@@ -1,4 +1,6 @@
 import axios from "axios";
+import { fetchChargerFee } from "../api/fee";
+import { fetchRoamingFee } from "../api/roamingPrice";
 
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
@@ -22,16 +24,15 @@ export const getStationNear = async (
   markersRef,
   setSelectedStation,
   filterOptions = {},
-  originMarkerRef,   
+  originMarkerRef,
   destMarkerRef,
-  neworiginMarkerRef,
-  newdestMarkerRef
+  memberCompanyRef
 ) => {
-    if (!mapInstance?.current) {
+  if (!mapInstance?.current) {
     console.warn("🚨 mapInstance.current가 없습니다!");
     return;
   }
-if (!markersRef?.current || !Array.isArray(markersRef.current)) {
+  if (!markersRef?.current || !Array.isArray(markersRef.current)) {
     console.warn("🚨 markersRef.current가 비정상입니다:", markersRef?.current);
     return;
   }
@@ -52,16 +53,16 @@ if (!markersRef?.current || !Array.isArray(markersRef.current)) {
     console.log("서버 응답:", stations);
 
     // 출발,도착 마커는 따로 관리
-markersRef.current.forEach((entry) => {
-  const marker = entry.marker;
-  const isOrigin = marker === originMarkerRef.current;
-  const isDest = marker === destMarkerRef.current;
-  if (!isOrigin && !isDest) {
-    marker.setMap(null); // 일반 마커만 제거
-  }
-});
+    markersRef.current.forEach((entry) => {
+      const marker = entry.marker;
+      const isOrigin = marker === originMarkerRef.current;
+      const isDest = marker === destMarkerRef.current;
+      if (!isOrigin && !isDest) {
+        marker.setMap(null); // 일반 마커만 제거
+      }
+    });
 
-       markersRef.current = markersRef.current.filter(
+    markersRef.current = markersRef.current.filter(
       (entry) =>
         entry.marker === originMarkerRef.current ||
         entry.marker === destMarkerRef.current
@@ -69,43 +70,72 @@ markersRef.current.forEach((entry) => {
 
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
 
-   stations.forEach((station) => {
-    const statIdStr = station.statId?.toString();
-    const isOrigin = originMarkerRef.current?.dataStatId?.toString() === statIdStr;
-    const isDest   = destMarkerRef.current?.dataStatId?.toString() === statIdStr;
-    if (isOrigin || isDest) return;
-    
-    const exists = markersRef.current.some(
-    (e) => e.data.statId?.toString() === statIdStr);
-     if (exists) return;
+    stations.forEach((station) => {
+      const statIdStr = station.statId?.toString();
+      const isOrigin =
+        originMarkerRef.current?.dataStatId?.toString() === statIdStr;
+      const isDest =
+        destMarkerRef.current?.dataStatId?.toString() === statIdStr;
+      if (isOrigin || isDest) return;
 
-     const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-     const marker  = new window.Tmapv2.Marker({
-       position:   position,
-       map:        mapInstance.current,
-       icon:       station.logoUrl,
-       iconSize:   new window.Tmapv2.Size(48, 72),
-       iconAnchor: new window.Tmapv2.Point(24, 72),
-     });
+      const exists = markersRef.current.some(
+        (e) => e.data.statId?.toString() === statIdStr
+      );
+      if (exists) return;
 
-     marker.addListener("click", () => {
-       mapInstance.current.setCenter(position);
-setSelectedStation?.({
-  statId: station.statId,
-  chgerId: station.chgerId,
-  statNm: station.statNm,      // ← 이름 (name 아님)
-  addr:   station.addr,        // ← 주소 (address 아님)
-  lat:    station.lat,
-  lon:    station.lng,         // ← lng를 사용
-  tel:    "-",                 // ← 전화번호 없으니 placeholder라도
-  bnm:    station.businNm      // ← 사업자 이름도 표시하고 싶으면
-});
+      const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+      const marker = new window.Tmapv2.Marker({
+        position: position,
+        map: mapInstance.current,
+        icon: station.logoUrl,
+        iconSize: new window.Tmapv2.Size(48, 72),
+        iconAnchor: new window.Tmapv2.Point(24, 72),
+      });
+
+      marker.addListener("click", async () => {
+        mapInstance.current.setCenter(position);
+
+        if (!station.busiId) {
+          console.warn("🚨 busiId 없음, 요금 정보 생략", station);
+          setSelectedStation(station);
+          return;
+        }
+
+        try {
+          // 기본 요금
+          const baseFee = await fetchChargerFee(station.busiId);
+          console.log("✅ 기본 요금:", baseFee);
+
+          // 로밍 요금
+          let roamingFee;
+          const currentCompany = memberCompanyRef?.current;
+          console.log("📍 클릭 시 최신 memberCompany 값:", currentCompany);
+
+          if (currentCompany) {
+            roamingFee = await fetchRoamingFee(currentCompany, station.busiId);
+            console.log("✅ 로밍 요금:", roamingFee);
+          } else {
+            roamingFee = "회원사를 먼저 선택해주세요.";
+          }
+
+          setSelectedStation({
+            ...station,
+            feeInfo: baseFee,
+            roamingInfo: typeof roamingFee === "string" ? roamingFee : null,
+          });
+        } catch (error) {
+          console.warn("❌ 요금 정보 에러:", error);
+          setSelectedStation({
+            ...station,
+            feeInfo: "기본 요금 불러오기 실패",
+            roamingInfo: "로밍 요금 불러오기 실패",
+          });
+        }
+      });
+
+      // 이제 entry 형태로 저장
+      markersRef.current.push({ data: station, marker: marker });
     });
-
-     // 이제 entry 형태로 저장
-     markersRef.current.push({ data: station, marker: marker });
-   });
-
   } catch (error) {
     console.error("서버 전송 에러:", error);
     return [];
@@ -121,8 +151,9 @@ export const registerMapCenterListener = (
   markersRef,
   setSelectedStation,
   filterOptionsRef,
-  originMarkerRef,      // 추가
-  destMarkerRef  
+  originMarkerRef, // 추가
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   let debounceTimer = null;
 
@@ -145,8 +176,9 @@ export const registerMapCenterListener = (
         markersRef,
         setSelectedStation,
         filterOptionsRef.current,
-        originMarkerRef,    
-        destMarkerRef
+        originMarkerRef,
+        destMarkerRef,
+        memberCompanyRef
       );
     }, 300);
   };
@@ -164,8 +196,9 @@ export const trackUserMovement = (
   markersRef,
   setSelectedStation,
   filterOptionsRef,
-  originMarkerRef,  
-  destMarkerRef  
+  originMarkerRef,
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   const lastUserUpdateTimeRef = { current: 0 }; // 로컬 ref 대체
   const USER_UPDATE_INTERVAL = 10000; // 10초
@@ -208,8 +241,9 @@ export const trackUserMovement = (
             markersRef,
             setSelectedStation,
             filterOptionsRef.current,
-            originMarkerRef,    // ← 반드시 추가
-            destMarkerRef 
+            originMarkerRef, // ← 반드시 추가
+            destMarkerRef,
+            memberCompanyRef
           );
         } else {
           console.log("사용자 위치 변경: 서버 요청 대기 중...");
