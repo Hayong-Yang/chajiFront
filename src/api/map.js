@@ -1,4 +1,6 @@
 import axios from "axios";
+import { fetchChargerFee } from "../api/fee";
+import { fetchRoamingFee } from "../api/roamingPrice";
 
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
@@ -24,8 +26,7 @@ export const getStationNear = async (
   filterOptions = {},
   originMarkerRef,
   destMarkerRef,
-  neworiginMarkerRef,
-  newdestMarkerRef
+  memberCompanyRef
 ) => {
   if (!mapInstance?.current) {
     console.warn("🚨 mapInstance.current가 없습니다!");
@@ -91,9 +92,45 @@ export const getStationNear = async (
         iconAnchor: new window.Tmapv2.Point(24, 72),
       });
 
-      marker.addListener("click", () => {
+      marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
-        setSelectedStation?.(station);
+
+        if (!station.busiId) {
+          console.warn("🚨 busiId 없음, 요금 정보 생략", station);
+          setSelectedStation(station);
+          return;
+        }
+
+        try {
+          // 기본 요금
+          const baseFee = await fetchChargerFee(station.busiId);
+          console.log("✅ 기본 요금:", baseFee);
+
+          // 로밍 요금
+          let roamingFee;
+          const currentCompany = memberCompanyRef?.current;
+          console.log("📍 클릭 시 최신 memberCompany 값:", currentCompany);
+
+          if (currentCompany) {
+            roamingFee = await fetchRoamingFee(currentCompany, station.busiId);
+            console.log("✅ 로밍 요금:", roamingFee);
+          } else {
+            roamingFee = "회원사를 먼저 선택해주세요.";
+          }
+
+          setSelectedStation({
+            ...station,
+            feeInfo: baseFee,
+            roamingInfo: typeof roamingFee === "string" ? roamingFee : null,
+          });
+        } catch (error) {
+          console.warn("❌ 요금 정보 에러:", error);
+          setSelectedStation({
+            ...station,
+            feeInfo: "기본 요금 불러오기 실패",
+            roamingInfo: "로밍 요금 불러오기 실패",
+          });
+        }
       });
 
       // 이제 entry 형태로 저장
@@ -115,7 +152,8 @@ export const registerMapCenterListener = (
   setSelectedStation,
   filterOptionsRef,
   originMarkerRef, // 추가
-  destMarkerRef
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   let debounceTimer = null;
 
@@ -139,7 +177,8 @@ export const registerMapCenterListener = (
         setSelectedStation,
         filterOptionsRef.current,
         originMarkerRef,
-        destMarkerRef
+        destMarkerRef,
+        memberCompanyRef
       );
     }, 300);
   };
@@ -158,7 +197,8 @@ export const trackUserMovement = (
   setSelectedStation,
   filterOptionsRef,
   originMarkerRef,
-  destMarkerRef
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   const lastUserUpdateTimeRef = { current: 0 }; // 로컬 ref 대체
   const USER_UPDATE_INTERVAL = 10000; // 10초
@@ -202,7 +242,8 @@ export const trackUserMovement = (
             setSelectedStation,
             filterOptionsRef.current,
             originMarkerRef, // ← 반드시 추가
-            destMarkerRef
+            destMarkerRef,
+            memberCompanyRef
           );
         } else {
           console.log("사용자 위치 변경: 서버 요청 대기 중...");
