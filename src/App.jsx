@@ -7,6 +7,7 @@ import Master from "./pages/master";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import CarRegister from "./pages/CarRegister";
+import FavoriteStation from "./pages/FavoriteStation";
 
 export default function App() {
     return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/carRegister" element={<CarRegister />} />
+            <Route path="/favoriteStation" element={<FavoriteStation />} />
         </Routes>
     );
 }
