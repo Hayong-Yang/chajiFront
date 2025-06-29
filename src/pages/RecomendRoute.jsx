@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import haversineDistance from "../utils/haversineUtil";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./RecomendRoute.css";
 import {
   getInterpolatedTemperature,
@@ -47,6 +47,7 @@ export default function RecommendRoute() {
     targetLevel: 20,
   });
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     originInput,
     destInput,
@@ -63,14 +64,26 @@ export default function RecommendRoute() {
   } = location.state || {};
 
   const [filters, setFilters] = useState(filterOptions);
+
+  // 출발지와 목적지 정보를 상태로 관리
+  const [originInfo, setOriginInfo] = useState({
+    input: originInput || "",
+    coords: originCoords || { lat: 37.504198, lon: 127.04894 },
+  });
+
+  const [destInfo, setDestInfo] = useState({
+    input: destInput || "",
+    coords: destCoords || { lat: 35.1631, lon: 129.1635 },
+  });
+
   // const startLat = 37.504198,
   //   startLon = 127.04894;
   // const endLat = 35.1631,
   //   endLon = 129.1635;
-  const startLat = originCoords.lat ?? 37.504198;
-  const startLon = originCoords.lon ?? 127.04894;
-  const endLat = destCoords.lat ?? 35.1631;
-  const endLon = destCoords.lon ?? 129.1635;
+  const startLat = originInfo.coords.lat;
+  const startLon = originInfo.coords.lon;
+  const endLat = destInfo.coords.lat;
+  const endLon = destInfo.coords.lon;
 
   const { freeParking, noLimit, outputMin, outputMax, type, provider } =
     filterOptions;
@@ -113,19 +126,24 @@ export default function RecommendRoute() {
     });
     mapRef.current = map;
 
-    new Tmapv2.Marker({
-      position: new Tmapv2.LatLng(startLat, startLon),
-      icon: "/img/myLocationIcon/currentLocation.png",
-      iconSize: new window.Tmapv2.Size(48, 72),
-      map,
-    });
-    new Tmapv2.Marker({
-      position: new Tmapv2.LatLng(endLat, endLon),
-      icon: "/img/myLocationIcon/currentLocation.png",
-      iconSize: new window.Tmapv2.Size(48, 72),
-      map,
-    });
-  }, []);
+    // 출발지와 목적지 마커 추가 함수
+    const addMarkers = () => {
+      new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(startLat, startLon),
+        icon: "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+        map,
+      });
+      new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(endLat, endLon),
+        icon: "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+        map,
+      });
+    };
+
+    addMarkers();
+  }, [startLat, startLon, endLat, endLon]); // 의존성 배열에 좌표 추가
 
   useEffect(() => {
     // 조건: 맵 로딩 완료 && 평균 온도 세팅 완료
@@ -739,8 +757,32 @@ export default function RecommendRoute() {
     }
   };
   // 핸들러 예시
-  function handleBack() {}
-  function handleSwap() {}
+  function handleBack() {
+    navigate("/");
+  }
+
+  // 스왑 기능 구현
+  const handleSwap = () => {
+    // 입력값과 좌표 스왑
+    const tempInput = originInfo.input;
+    const tempCoords = originInfo.coords;
+
+    setOriginInfo({
+      input: destInfo.input,
+      coords: destInfo.coords,
+    });
+
+    setDestInfo({
+      input: tempInput,
+      coords: tempCoords,
+    });
+
+    // 경로 재계산
+    setTimeout(() => {
+      requestRoute();
+    }, 100); // 상태 업데이트 후 경로 재계산
+  };
+
   function handleAddWaypoint() {}
 
   // 설정 적용 핸들러 추가
@@ -762,7 +804,7 @@ export default function RecommendRoute() {
             <input
               className="route-input"
               type="text"
-              value={originInput || ""}
+              value={originInfo.input}
               placeholder="출발지 입력"
               readOnly
             />
@@ -775,7 +817,7 @@ export default function RecommendRoute() {
             <input
               className="route-input"
               type="text"
-              value={destInput || ""}
+              value={destInfo.input}
               placeholder="도착지 입력"
               readOnly
             />
@@ -818,6 +860,67 @@ export default function RecommendRoute() {
         <span role="img" aria-label="설정">
           ⚙️
         </span>
+      </button>
+
+      <button
+        onClick={() => {
+          if (mapRef.current) {
+            mapRef.current.setZoom(8); // 줌아웃하여 전체 경로 보기
+          }
+        }}
+        className="route-zoom-out-btn"
+        aria-label="전체 경로 보기"
+      >
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path
+            d="M9 4H4V9"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M4 9L10 3"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M19 4H24V9"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M24 9L18 3"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M19 24H24V19"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M24 19L18 25"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M9 24H4V19"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M4 19L10 25"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
       </button>
 
       {/* 설정 패널 바깥 클릭 시 닫히는 오버레이 */}
