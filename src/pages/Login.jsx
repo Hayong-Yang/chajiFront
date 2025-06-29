@@ -12,7 +12,7 @@ export default function Login() {
         try {
             const token = await loginUser(userId, password);
             localStorage.setItem("accessToken", token);
-            navigate("/carregister");
+            navigate("/home");
         } catch (e) {
             setMessage("로그인 실패 😱");
         }
