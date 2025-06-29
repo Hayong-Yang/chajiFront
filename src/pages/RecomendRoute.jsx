@@ -37,6 +37,15 @@ export default function RecommendRoute() {
     chargeLimit: 85,
     targetLevel: 20,
   });
+  // 임시 배터리 정보 상태 추가
+  const [tempBatteryInfo, setTempBatteryInfo] = useState({
+    level: 50,
+    capacity: 70,
+    efficiency: 5.0,
+    temperature: 15,
+    chargeLimit: 85,
+    targetLevel: 20,
+  });
   const location = useLocation();
   const {
     originInput,
@@ -86,9 +95,14 @@ export default function RecommendRoute() {
       ...prev,
       temperature: avgTemp,
     }));
+    setTempBatteryInfo((prev) => ({
+      // 임시 상태도 초기화
+      ...prev,
+      temperature: avgTemp,
+    }));
 
     console.log("📌 평균 기온 초기화 완료:", avgTemp);
-  }, []);
+  }, []); // 의존성 배열에서 온도 제거
   // 맵 세팅
   useEffect(() => {
     const map = new Tmapv2.Map("map_div", {
@@ -729,6 +743,13 @@ export default function RecommendRoute() {
   function handleSwap() {}
   function handleAddWaypoint() {}
 
+  // 설정 적용 핸들러 추가
+  const handleApplySettings = () => {
+    setBatteryInfo(tempBatteryInfo); // 실제 상태 업데이트
+    setShowSettings(false);
+    requestRoute(); // 경로 재계산
+  };
+
   return (
     <div className="recommend-route-root">
       {/* 상단 오버레이 */}
@@ -813,20 +834,27 @@ export default function RecommendRoute() {
         >
           ←
         </button>
-        <h3>🔋 배터리 정보 입력</h3>
+        <h3>경로추천 옵션</h3>
 
         {/* 배터리 잔량 */}
         <div className="slider-group">
-          <label>배터리 잔량</label>
-          <div className="slider-value">{batteryInfo.level.toFixed(1)}%</div>
+          <div className="slider-header">
+            <label className="slider-label">배터리 잔량</label>
+            <div className="slider-value">
+              {tempBatteryInfo.level.toFixed(1)}%
+            </div>
+          </div>
           <input
             type="range"
             min={0}
             max={100}
             step={0.1}
-            value={batteryInfo.level}
+            value={tempBatteryInfo.level}
             onChange={(e) =>
-              setBatteryInfo({ ...batteryInfo, level: Number(e.target.value) })
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
+                level: Number(e.target.value),
+              })
             }
             className="custom-slider"
           />
@@ -834,19 +862,21 @@ export default function RecommendRoute() {
 
         {/* 공인 전비 */}
         <div className="slider-group">
-          <label>공인 전비</label>
-          <div className="slider-value">
-            {batteryInfo.efficiency.toFixed(1)} km/kWh
+          <div className="slider-header">
+            <label className="slider-label">공인 전비</label>
+            <div className="slider-value">
+              {tempBatteryInfo.efficiency.toFixed(1)} km/kWh
+            </div>
           </div>
           <input
             type="range"
             min={3}
             max={10}
             step={0.1}
-            value={batteryInfo.efficiency}
+            value={tempBatteryInfo.efficiency}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 efficiency: Number(e.target.value),
               })
             }
@@ -856,19 +886,21 @@ export default function RecommendRoute() {
 
         {/* 선호 충전 한도 */}
         <div className="slider-group">
-          <label>선호 충전 한도</label>
-          <div className="slider-value">
-            {batteryInfo.chargeLimit?.toFixed(1) ?? 85}%
+          <div className="slider-header">
+            <label className="slider-label">선호 충전 한도</label>
+            <div className="slider-value">
+              {tempBatteryInfo.chargeLimit?.toFixed(1) ?? 85}%
+            </div>
           </div>
           <input
             type="range"
             min={60}
             max={100}
             step={0.1}
-            value={batteryInfo.chargeLimit ?? 85}
+            value={tempBatteryInfo.chargeLimit ?? 85}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 chargeLimit: Number(e.target.value),
               })
             }
@@ -878,19 +910,21 @@ export default function RecommendRoute() {
 
         {/* 희망 목적지 배터리 잔량 */}
         <div className="slider-group">
-          <label>희망 목적지 배터리 잔량</label>
-          <div className="slider-value">
-            {batteryInfo.targetLevel?.toFixed(1) ?? 50}%
+          <div className="slider-header">
+            <label className="slider-label">희망 목적지 배터리 잔량</label>
+            <div className="slider-value">
+              {tempBatteryInfo.targetLevel?.toFixed(1) ?? 50}%
+            </div>
           </div>
           <input
             type="range"
             min={10}
             max={80}
             step={0.1}
-            value={batteryInfo.targetLevel ?? 50}
+            value={tempBatteryInfo.targetLevel ?? 50}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 targetLevel: Number(e.target.value),
               })
             }
@@ -900,17 +934,19 @@ export default function RecommendRoute() {
 
         {/* 배터리 용량 */}
         <div className="slider-group">
-          <label>배터리 용량</label>
-          <div className="slider-value">{batteryInfo.capacity} kWh</div>
+          <div className="slider-header">
+            <label className="slider-label">배터리 용량</label>
+            <div className="slider-value">{tempBatteryInfo.capacity} kWh</div>
+          </div>
           <input
             type="range"
             min={20}
             max={120}
             step={1}
-            value={batteryInfo.capacity}
+            value={tempBatteryInfo.capacity}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 capacity: Number(e.target.value),
               })
             }
@@ -920,17 +956,19 @@ export default function RecommendRoute() {
 
         {/* 외부 온도 */}
         <div className="slider-group">
-          <label>외부 온도</label>
-          <div className="slider-value">{batteryInfo.temperature}℃</div>
+          <div className="slider-header">
+            <label className="slider-label">외부 온도</label>
+            <div className="slider-value">{tempBatteryInfo.temperature}℃</div>
+          </div>
           <input
             type="range"
             min={-20}
             max={50}
             step={1}
-            value={batteryInfo.temperature}
+            value={tempBatteryInfo.temperature}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 temperature: Number(e.target.value),
               })
             }
@@ -967,10 +1005,7 @@ export default function RecommendRoute() {
         </div>
 
         {/* 설정 적용하기 버튼 */}
-        <button
-          className="apply-settings-btn"
-          onClick={() => setShowSettings(false)}
-        >
+        <button className="apply-settings-btn" onClick={handleApplySettings}>
           설정 적용하기
         </button>
       </div>
