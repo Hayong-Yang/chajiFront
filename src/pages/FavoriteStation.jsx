@@ -1,52 +1,93 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const FavoriteStations = () => {
+function FavoritePage() {
     const [favorites, setFavorites] = useState([]);
     const token = localStorage.getItem("accessToken");
 
-    const fetchFavorites = async () => {
-        try {
-            const res = await axios.get("/api/favorite/stations", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setFavorites(res.data);
-        } catch (err) {
-            console.error("즐겨찾기 조회 실패", err);
-        }
-    };
-
-    const removeFavorite = async (statId) => {
-        try {
-            await axios.delete("/api/favorite", {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { statId },
-            });
-            fetchFavorites(); // 삭제 후 목록 갱신
-        } catch (err) {
-            console.error("즐겨찾기 삭제 실패", err);
-        }
-    };
-
     useEffect(() => {
-        fetchFavorites();
-    }, []);
+        if (token) {
+            axios
+                .get("/api/favorite/list", {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+                .then((res) => {
+                    console.log("받은 데이터:", res.data); // 🔍 디버깅용
+                    setFavorites(res.data);
+                })
+                .catch((err) => console.error("즐겨찾기 로딩 실패", err));
+        }
+    }, [token]);
+
+    const handleDelete = (statId) => {
+        axios
+            .delete(`/api/favorite/delete?statId=${statId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            .then(() => {
+                setFavorites(favorites.filter((fav) => fav.stat_id !== statId));
+            })
+            .catch((err) => console.error("삭제 실패", err));
+    };
 
     return (
-        <div>
-            <h2>즐겨찾는 충전소 목록</h2>
-            <ul>
-                {favorites.map((fav, index) => (
-                    <li key={index}>
-                        {fav.statId}
-                        <button onClick={() => removeFavorite(fav.statId)}>
-                            삭제
-                        </button>
-                    </li>
-                ))}
-            </ul>
+        <div style={{ padding: "16px" }}>
+            <h2>즐겨찾기</h2>
+            {favorites.map((station, idx) => (
+                <div
+                    key={idx}
+                    style={{
+                        background: "#f5f5f5",
+                        borderRadius: "10px",
+                        padding: "16px",
+                        marginBottom: "10px",
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        <div>
+                            {/* ✅ 충전소 이름 */}
+                            <strong>{station.stat_nm}</strong>
+                            <br />
+                            {/* ✅ 주소 */}
+                            <span style={{ fontSize: "14px", color: "#555" }}>
+                                {station.addr}
+                            </span>
+                            <br />
+                            {/* ✅ 충전 상태 */}
+                            <span
+                                style={{
+                                    color:
+                                        station.stat === "2" ? "green" : "gray",
+                                }}
+                            >
+                                {station.stat === "2" ? "충전가능" : "충전중"}
+                            </span>{" "}
+                            {/* ✅ 충전 타입 */}
+                            &nbsp; {station.chger_type}
+                        </div>
+                        <div>
+                            <span
+                                style={{ color: "orange", marginRight: "10px" }}
+                            >
+                                🔔
+                            </span>
+                            <span
+                                style={{ color: "orange", cursor: "pointer" }}
+                                onClick={() => handleDelete(station.stat_id)}
+                            >
+                                ⭐
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
     );
-};
+}
 
-export default FavoriteStations;
+export default FavoritePage;

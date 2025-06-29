@@ -10,6 +10,7 @@ import {
     registerMapCenterListener,
     trackUserMovement,
 } from "../api/map";
+import { checkFavorite, addFavorite, deleteFavorite } from "../api/favorite";
 import "./home.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
@@ -435,6 +436,33 @@ export default function Home() {
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, [showDrawer, selectedStation]);
+
+    // 충전소 선택되면 즐겨찾기 여부 확인
+    useEffect(() => {
+        if (selectedStation?.statId && token) {
+            checkFavorite(selectedStation.statId, token)
+                .then((res) => setIsFavorite(res.data))
+                .catch(() => setIsFavorite(false));
+        }
+    }, [selectedStation]);
+
+    // ⭐ 클릭 시 즐겨찾기 등록/삭제
+    const handleFavoriteToggle = () => {
+        if (!token || !selectedStation?.statId) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        if (isFavorite) {
+            deleteFavorite(selectedStation.statId, token)
+                .then(() => setIsFavorite(false))
+                .catch((err) => console.error("즐겨찾기 삭제 실패", err));
+        } else {
+            addFavorite(selectedStation.statId, token)
+                .then(() => setIsFavorite(true))
+                .catch((err) => console.error("즐겨찾기 추가 실패", err));
+        }
+    };
 
     const handleSearchSelect = (item, source = "search") => {
         const map = mapInstance.current;
@@ -1488,7 +1516,8 @@ export default function Home() {
                                 className={`favorite-button ${
                                     isFavorite ? "on" : ""
                                 }`}
-                                onClick={() => setIsFavorite((prev) => !prev)}
+                                // onClick={() => setIsFavorite((prev) => !prev)}
+                                onClick={handleFavoriteToggle}
                                 title="즐겨찾기"
                             >
                                 {isFavorite ? "⭐" : "☆"}
