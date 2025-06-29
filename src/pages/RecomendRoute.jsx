@@ -75,6 +75,7 @@ export default function RecommendRoute() {
     { value: "4", label: "고속도로우선" },
     { value: "10", label: "최단거리" },
   ];
+  // 날짜 세팅
   useEffect(() => {
     const now = new Date();
     const month = now.getMonth() + 1;
@@ -88,7 +89,7 @@ export default function RecommendRoute() {
 
     console.log("📌 평균 기온 초기화 완료:", avgTemp);
   }, []);
-
+  // 맵 세팅
   useEffect(() => {
     const map = new Tmapv2.Map("map_div", {
       center: new Tmapv2.LatLng(startLat, startLon),
@@ -111,6 +112,14 @@ export default function RecommendRoute() {
       map,
     });
   }, []);
+
+  useEffect(() => {
+    // 조건: 맵 로딩 완료 && 평균 온도 세팅 완료
+    if (mapRef.current && batteryInfo.temperature !== 15) {
+      console.log("📍 자동 경로 추천 시작");
+      requestRoute();
+    }
+  }, [mapRef.current, batteryInfo.temperature]);
 
   const resetMap = () => {
     drawnPolylines.forEach((polyline) => polyline.setMap(null));
