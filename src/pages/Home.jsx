@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -1751,7 +1751,10 @@ export default function Home() {
                                 alt="프로필"
                                 className="profile-image"
                             />
-                            <div className="login-links">회원가입 | 로그인</div>
+                            <div className="login-links">
+                                <Link to="/register">회원가입</Link> |{" "}
+                                <Link to="/login">로그인</Link>
+                            </div>
                         </div>
                         <div className="drawer-welcome">
                             차지차지와 함께 행복한 하루 보내세요!
