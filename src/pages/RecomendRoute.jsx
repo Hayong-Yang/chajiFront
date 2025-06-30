@@ -13,6 +13,7 @@ export default function RecommendRoute() {
   const [stationMarkers, setStationMarkers] = useState([]);
   const [selectedPriority, setSelectedPriority] = useState("speed"); // ✅ 기본값 설정
   const [showSettings, setShowSettings] = useState(false);
+  const [stationCards, setStationCards] = useState([]);
   const [batteryInfo, setBatteryInfo] = useState({
     level: 20,
     capacity: 70,
@@ -51,43 +52,43 @@ export default function RecommendRoute() {
   const [selectedStationIdx, setSelectedStationIdx] = useState(0);
 
   // 예시 데이터
-  const stationCards = [
-    {
-      name: "역삼역 충전소",
-      totalTime: "2시간 10분",
-      detour: "5분",
-      available: 3,
-      total: 6,
-    },
-    {
-      name: "강남역 충전소",
-      totalTime: "2시간 15분",
-      detour: "7분",
-      available: 2,
-      total: 4,
-    },
-    {
-      name: "서초역 충전소",
-      totalTime: "2시간 20분",
-      detour: "10분",
-      available: 1,
-      total: 3,
-    },
-    {
-      name: "양재역 충전소",
-      totalTime: "2시간 25분",
-      detour: "12분",
-      available: 4,
-      total: 5,
-    },
-    {
-      name: "삼성역 충전소",
-      totalTime: "2시간 30분",
-      detour: "15분",
-      available: 0,
-      total: 2,
-    },
-  ];
+  // const stationCards = [
+  //   {
+  //     name: "역삼역 충전소",
+  //     totalTime: "2시간 10분",
+  //     detour: "5분",
+  //     available: 3,
+  //     total: 6,
+  //   },
+  //   {
+  //     name: "강남역 충전소",
+  //     totalTime: "2시간 15분",
+  //     detour: "7분",
+  //     available: 2,
+  //     total: 4,
+  //   },
+  //   {
+  //     name: "서초역 충전소",
+  //     totalTime: "2시간 20분",
+  //     detour: "10분",
+  //     available: 1,
+  //     total: 3,
+  //   },
+  //   {
+  //     name: "양재역 충전소",
+  //     totalTime: "2시간 25분",
+  //     detour: "12분",
+  //     available: 4,
+  //     total: 5,
+  //   },
+  //   {
+  //     name: "삼성역 충전소",
+  //     totalTime: "2시간 30분",
+  //     detour: "15분",
+  //     available: 0,
+  //     total: 2,
+  //   },
+  // ];
 
   const routeOptions = [
     { value: "0", label: "차지추천" },
@@ -220,6 +221,7 @@ export default function RecommendRoute() {
       totalTime,
       totalFare,
     } = routeInfo;
+    const baseTime = routeInfo.totalTime; // 기본 경로 시간 저장!
 
     const {
       level: batteryLevelPercent,
@@ -292,7 +294,7 @@ export default function RecommendRoute() {
 
     setWaypointsLatLng(latlngList);
 
-    console.log("위경도 웨이포인트 리스트:", latlngList);
+    // console.log("위경도 웨이포인트 리스트:", latlngList);
 
     // 5. 충전소 호출 전에 주행 가능 거리 계산
     const tempFactor = temperature <= -10 ? 0.8 : 1.0;
@@ -321,10 +323,10 @@ export default function RecommendRoute() {
     const includedList = latlngList.slice(0, reachableCount);
 
     console.log("🧮 예상 주행 가능 거리:", reachableDistance.toFixed(1), "km");
-    console.log("🚩 포함된 웨이포인트 수:", includedList.length, "개");
+    // console.log("🚩 포함된 웨이포인트 수:", includedList.length, "개");
 
-    // 7. 웨이포인트 근처 충전소 호출& 반경기반 필터링
-    handleFindNearbyStations(includedList, hasHighway, payload);
+    // 7. 웨이포인트 근처 충전소 호출 + 반경기반 필터링 + 점수화 필터링 + 우회시간 필터링
+    handleFindNearbyStations(includedList, hasHighway, payload, baseTime);
   };
 
   // ******************************************************
@@ -383,11 +385,16 @@ export default function RecommendRoute() {
   };
 
   //웨이포인트 리스트 기반 충전소 필터링 함수
-  const handleFindNearbyStations = async (latlngList, hasHighway, payload) => {
-    // 기존 추천 마커 제거
+  const handleFindNearbyStations = async (
+    latlngList,
+    hasHighway,
+    payload,
+    baseTime
+  ) => {
+    // 1. 기존 추천 마커 제거
     stationMarkers.forEach((marker) => marker.setMap(null));
     setStationMarkers([]);
-
+    // 2. 웨이포인트, 전체경로 구간별로 10개 후보 충전소 선별
     const res = await fetch("/api/station/getStationsNearWaypoints", {
       method: "POST",
       headers: {
@@ -396,18 +403,59 @@ export default function RecommendRoute() {
       body: JSON.stringify({
         waypoints: latlngList,
         highway: hasHighway,
-        ...payload, // ✅ 전개 연산자로 편입
+        ...payload, // 전개 연산자로 편입
       }),
     });
 
     const data = await res.json();
-    console.log("📍 최종 충전소 목록:", data);
+    // console.log("📍 세미 10개 충전소 목록:", data);
 
-    const newMarkers = data.map((station) => {
+    // 3.각 충전소별 출발지와 도착지 설정 (위에서 정의한 startLat/startLon 등 사용)
+    const start = { lat: startLat, lng: startLon };
+    const end = { lat: endLat, lng: endLon };
+
+    // 4. 각 충전소에 대해 detourTime 병렬 호출
+    const evaluatedStations = await Promise.all(
+      data.map(async (station) => {
+        const totalTime = await getDetourTime(start, station, end); // 전체 경유 시간
+        const detourTime = baseTime != null ? totalTime - baseTime : null; // ⭐️ 기본 경로 시간과의 차이
+        return {
+          statId: station.statId,
+          lat: station.lat,
+          lng: station.lng,
+          statNm: station.statNm,
+          totalTime,
+          detourTime,
+        };
+      })
+    );
+
+    // 5. 테스트: 우회시간 기준 정렬
+    evaluatedStations.sort((a, b) => a.detourTime - b.detourTime);
+
+    // 6. Top 5 추출
+    const topStations = evaluatedStations.slice(0, 5);
+
+    console.log(" 우회 top5개 충전소 목록:", topStations);
+
+    // 7. topstations들 실시간 충전소 사용가능 여부 확인
+    const stationsWithStatus = await Promise.all(
+      topStations.map(async (station) => {
+        const status = await getStationStatus(station.statId);
+        return { ...station, ...status };
+      })
+    );
+
+    console.log("📍 충전소 추가 최종5개 충전소 목록:", stationsWithStatus);
+
+    // 8. 마커 표시
+    const defaultSize = new Tmapv2.Size(32, 32);
+
+    const newMarkers = stationsWithStatus.map((station) => {
       const marker = new Tmapv2.Marker({
         position: new Tmapv2.LatLng(station.lat, station.lng),
         icon: "/img/logos/default.png",
-        iconSize: new Tmapv2.Size(32, 32),
+        iconSize: defaultSize,
         title: station.statNm,
         map: mapRef.current,
       });
@@ -415,6 +463,76 @@ export default function RecommendRoute() {
       return marker;
     });
     setStationMarkers(newMarkers);
+
+    // 9. 카드용 데이터로 변환
+    const cardData = stationsWithStatus.map((s) => ({
+      name: s.statNm,
+      totalTime: `${Math.round(s.totalTime / 60)}분`,
+      detour: `${Math.round(s.detourTime / 60)}분`,
+      available: s.availableCount ?? null, // 서버에서 넘겨주는 필드명에 따라 수정
+      total: s.totalCount ?? null, // "
+    }));
+
+    setStationCards(cardData); // 🔥 카드 리스트 세팅
+  };
+
+  // tmap 경로추천 api 활용 우회시간 구하기 함수
+  const getDetourTime = async (start, station, end) => {
+    const body = {
+      startX: start.lng,
+      startY: start.lat,
+      endX: end.lng,
+      endY: end.lat,
+      passList: `${station.lng},${station.lat}`,
+      reqCoordType: "WGS84GEO",
+      resCoordType: "WGS84GEO",
+      searchOption: "0",
+    };
+
+    const response = await fetch(
+      "https://apis.openapi.sk.com/tmap/routes?version=1&format=json",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          appKey: "rzCNpiuhIX5l0dwT9rvQ93GRc22mFn6baRSvJYFl",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const json = await response.json();
+    return json.features?.[0]?.properties?.totalTime ?? null;
+  };
+
+  //프론트에서 충전소 상태 API 병렬 호출
+  const getStationStatus = async (statId) => {
+    const urlEncoded =
+      "Fd9vStrV5WKcvb5kTCXeBBw1zyOOxNrOysX80lQ02PLaIWqI7PFfY7PlcJopX%2F3kd5FYkiHYt6QYbhItGuhIhQ%3D%3D";
+
+    const urlStr = `http://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey=${urlEncoded}&numOfRows=9999&pageNo=1&statId=${statId}&dataType=JSON`;
+    try {
+      const res = await fetch(urlStr);
+      const json = await res.json();
+
+      const items = json?.items?.item || [];
+
+      const totalCount = items.length;
+      const availableCount = items.filter((c) => c.stat === "2").length;
+
+      return {
+        availableCount,
+        totalCount,
+        chargers: items, // 👈 상세 충전기 정보들 전부 반환
+      };
+    } catch (err) {
+      console.error(`⚠️ 상태 가져오기 실패: ${statId}`, err);
+      return {
+        availableCount: null,
+        totalCount: null,
+        chargers: [],
+      };
+    }
   };
 
   // 핸들러 예시
@@ -705,15 +823,25 @@ setTimeout(() => {
               className={`station-card${
                 selectedStationIdx === idx ? " selected" : ""
               }`}
-              onClick={() => setSelectedStationIdx(idx)}
+              onClick={() => {
+                setSelectedStationIdx(idx);
+
+                const selectedMarker = stationMarkers[idx];
+                if (selectedMarker) {
+                  mapRef.current.setCenter(selectedMarker.getPosition());
+                  mapRef.current.setZoom(17); // 확대까지
+                }
+              }}
             >
               <div className="station-card-title">{card.name}</div>
               <div className="station-card-info">
-                <span>총 시간: {card.totalTime}</span>
-                <span>우회: {card.detour}</span>
+                <span>총 소요 시간: {card.totalTime}</span>
+                <span>우회 시간: {card.detour}</span>
               </div>
               <div className="station-card-charger">
-                사용가능 {card.available} / {card.total}
+                {card.total === null
+                  ? "🔌 충전기 정보 없음"
+                  : `🔌 사용가능 ${card.available} / ${card.total}`}
               </div>
             </div>
           ))}
