@@ -1664,39 +1664,31 @@ export default function Home() {
               padding: "18px 12px",
               boxShadow: "0 4px 24px rgba(25,118,210,0.18)",
               minWidth: 0,
+              maxHeight: "400px",
+              overflowY: "auto",
             }}
           >
-            {/* 검색 입력란 */}
+            {/* 검색 입력란 - 드롭다운 맨 위에 배치 */}
             <input
               type="text"
               value={roamingSearch}
               onChange={(e) => setRoamingSearch(e.target.value)}
-              placeholder="로밍사 검색"
+              placeholder="로밍사 검색..."
               style={{
                 width: "100%",
-                padding: "8px 12px",
-                fontSize: "15px",
-                borderRadius: "8px",
+                padding: "12px 16px",
+                fontSize: "16px",
+                borderRadius: "12px",
                 border: "none",
-                marginBottom: 10,
+                marginBottom: "12px",
                 color: "#222",
+                background: "#fff",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
               }}
             />
-            <select
-              value={memberCompany || ""}
-              onChange={(e) => {
-                setMemberCompany(e.target.value !== "" ? e.target.value : null);
-                setActiveDropdown(null);
-                setRoamingSearch("");
-              }}
-              style={{
-                padding: "8px 12px",
-                fontSize: "14px",
-                borderRadius: "8px",
-                width: "100%",
-                color: "#222",
-              }}
-            >
+
+            {/* 검색 결과만 표시되는 로밍사 목록 */}
+            <div style={{ maxHeight: "300px", overflowY: "auto" }}>
               {providerOptions
                 .filter(
                   (opt) =>
@@ -1706,11 +1698,53 @@ export default function Home() {
                       .includes(roamingSearch.trim().toLowerCase())
                 )
                 .map((opt) => (
-                  <option key={opt.code} value={opt.code}>
+                  <div
+                    key={opt.code}
+                    onClick={() => {
+                      setMemberCompany(opt.code);
+                      setActiveDropdown(null);
+                      setRoamingSearch("");
+                    }}
+                    style={{
+                      padding: "12px 16px",
+                      marginBottom: "4px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s",
+                      color: "#fff",
+                      fontSize: "15px",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "rgba(255,255,255,0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                    }}
+                  >
                     {opt.label}
-                  </option>
+                  </div>
                 ))}
-            </select>
+            </div>
+
+            {/* 검색 결과가 없을 때 메시지 */}
+            {roamingSearch.trim() &&
+              providerOptions.filter((opt) =>
+                opt.label
+                  .toLowerCase()
+                  .includes(roamingSearch.trim().toLowerCase())
+              ).length === 0 && (
+                <div
+                  style={{
+                    padding: "16px",
+                    textAlign: "center",
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  검색 결과가 없습니다.
+                </div>
+              )}
           </div>
         )}
 
