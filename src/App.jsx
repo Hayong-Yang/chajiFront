@@ -18,7 +18,6 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/home" />} />
       <Route path="/home" element={<Home />} />
-      <Route path="/poi" element={<Poi />} />
       <Route path="/recommendRoute" element={<RecommendRoute />} />
       <Route path="/master" element={<Master />} />
       <Route path="/register" element={<Register />} />
@@ -28,7 +27,6 @@ export default function App() {
       <Route path="/editprofile" element={<EditProfile />} />
     </Routes>
   );
-
 }
 
 //Navigate: 특정 경로로 자동 이동할 때 사용 (예: 기본 URL에서 로그인으로 강제 이동)
