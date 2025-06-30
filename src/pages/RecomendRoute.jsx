@@ -791,405 +791,415 @@ export default function RecommendRoute() {
     setShowSettings(false);
     requestRoute(); // 경로 재계산
 
-// 네비 연결
-   const openTmapApp = () => {
-    const viaParams = (waypointsLatLng || []) 
-      .map((v, i) => {
-        const name = v.name ?? `WP${i + 1}`;
-        return `viaName${i + 1}=${encodeURIComponent(name)}&viaX${i + 1}=${v.lon}&viaY${i + 1}=${v.lat}`;
-      })
-      .join("&");
+    // 네비 연결
+    const openTmapApp = () => {
+      const viaParams = (waypointsLatLng || [])
+        .map((v, i) => {
+          const name = v.name ?? `WP${i + 1}`;
+          return `viaName${i + 1}=${encodeURIComponent(name)}&viaX${i + 1}=${
+            v.lon
+          }&viaY${i + 1}=${v.lat}`;
+        })
+        .join("&");
 
-    const appURL = `tmap://route?startx=${startLon}&starty=${startLat}&goalx=${endLon}&goaly=${endLat}&startname=출발지&goalname=도착지${viaParams ? `&${viaParams}` : ""}&appKey=vlxDMNvK4Q3NY3i9Rm7e24E2twBIgIeT7H6nOHQE`;
-    const fallbackURL = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku"; // Tmap 설치 링크
+      const appURL = `tmap://route?startx=${startLon}&starty=${startLat}&goalx=${endLon}&goaly=${endLat}&startname=출발지&goalname=도착지${
+        viaParams ? `&${viaParams}` : ""
+      }&appKey=vlxDMNvK4Q3NY3i9Rm7e24E2twBIgIeT7H6nOHQE`;
+      const fallbackURL =
+        "https://play.google.com/store/apps/details?id=com.skt.tmap.ku"; // Tmap 설치 링크
 
-const now = new Date().getTime();
-window.location.href = appURL;
+      const now = new Date().getTime();
+      window.location.href = appURL;
 
-// 일정 시간 후 fallback (앱이 실행 안 되면 그대로 머무름 → fallback 이동)
-setTimeout(() => {
-  if (new Date().getTime() - now < 2000) {
-    window.location.href = fallbackURL;
-  }
-}, 1500);
+      // 일정 시간 후 fallback (앱이 실행 안 되면 그대로 머무름 → fallback 이동)
+      setTimeout(() => {
+        if (new Date().getTime() - now < 2000) {
+          window.location.href = fallbackURL;
+        }
+      }, 1500);
 
-    window.location.href = appURL;
+      window.location.href = appURL;
+    };
 
-  };
-
-  return (
-    <div className="recommend-route-root">
-      {/* 상단 오버레이 */}
-      <div className="route-top-overlay">
-        <div className="route-inputs-wide">
-          <div className="route-inputs-row">
-            <button className="route-back-btn" onClick={handleBack}>
-              &lt;
-            </button>
-            <input
-              className="route-input"
-              type="text"
-              value={originInfo.input}
-              placeholder="출발지 입력"
-              readOnly
-            />
-            <button className="route-swap-btn" onClick={handleSwap}>
-              ↕
-            </button>
-          </div>
-          <div className="route-inputs-row">
-            <span className="route-back-btn route-back-btn-placeholder"></span>
-            <input
-              className="route-input"
-              type="text"
-              value={destInfo.input}
-              placeholder="도착지 입력"
-              readOnly
-            />
-            <button
-              className="route-addwaypoint-btn"
-              onClick={handleAddWaypoint}
-            >
-              +
-            </button>
+    return (
+      <div className="recommend-route-root">
+        {/* 상단 오버레이 */}
+        <div className="route-top-overlay">
+          <div className="route-inputs-wide">
+            <div className="route-inputs-row">
+              <button className="route-back-btn" onClick={handleBack}>
+                &lt;
+              </button>
+              <input
+                className="route-input"
+                type="text"
+                value={originInfo.input}
+                placeholder="출발지 입력"
+                readOnly
+              />
+              <button className="route-swap-btn" onClick={handleSwap}>
+                ↕
+              </button>
+            </div>
+            <div className="route-inputs-row">
+              <span className="route-back-btn route-back-btn-placeholder"></span>
+              <input
+                className="route-input"
+                type="text"
+                value={destInfo.input}
+                placeholder="도착지 입력"
+                readOnly
+              />
+              <button
+                className="route-addwaypoint-btn"
+                onClick={handleAddWaypoint}
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 경로추천 옵션 카드 슬라이드 - 오버레이 바깥, 지도 위에 */}
-      <div className="route-option-slider-abs">
-        <div className="route-option-slider">
-          {routeOptions.map((opt) => (
-            <button
-              key={opt.value}
-              className={`route-option-card${
-                searchOption === opt.value ? " selected" : ""
-              }`}
-              onClick={() => {
-                setSearchOption(opt.value);
-                requestRoute();
-              }}
-              type="button"
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* 경로추천 옵션 카드 슬라이드 - 오버레이 바깥, 지도 위에 */}
+        <div className="route-option-slider-abs">
+          <div className="route-option-slider">
+            {routeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                className={`route-option-card${
+                  searchOption === opt.value ? " selected" : ""
+                }`}
+                onClick={() => {
+                  setSearchOption(opt.value);
+                  requestRoute();
+                }}
+                type="button"
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <button
-        onClick={() => setShowSettings(true)}
-        className="route-settings-open-btn"
-        aria-label="설정"
-      >
-        <span role="img" aria-label="설정">
-          ⚙️
-        </span>
-      </button>
-
-      <button
-        onClick={() => {
-          if (mapRef.current) {
-            mapRef.current.setZoom(8); // 줌아웃하여 전체 경로 보기
-          }
-        }}
-        className="route-zoom-out-btn"
-        aria-label="전체 경로 보기"
-      >
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <path
-            d="M9 4H4V9"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M4 9L10 3"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M19 4H24V9"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M24 9L18 3"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M19 24H24V19"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M24 19L18 25"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M9 24H4V19"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M4 19L10 25"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-
-      {/* 설정 패널 바깥 클릭 시 닫히는 오버레이 */}
-      {showSettings && (
-        <div className="route-overlay" onClick={() => setShowSettings(false)} />
-      )}
-
-      {/* 슬라이드 패널 */}
-      <div className={`route-slide-panel ${showSettings ? "open" : ""}`}>
-        {/* 뒤로가기 버튼 */}
         <button
-          className="route-slide-back-btn"
-          onClick={() => setShowSettings(false)}
+          onClick={() => setShowSettings(true)}
+          className="route-settings-open-btn"
+          aria-label="설정"
         >
-          ←
+          <span role="img" aria-label="설정">
+            ⚙️
+          </span>
         </button>
-        <h3>경로추천 옵션</h3>
 
-        {/* 배터리 잔량 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">배터리 잔량</label>
-            <div className="slider-value">
-              {tempBatteryInfo.level.toFixed(1)}%
-            </div>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={0.1}
-            value={tempBatteryInfo.level}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                level: Number(e.target.value),
-              })
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              mapRef.current.setZoom(8); // 줌아웃하여 전체 경로 보기
             }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 공인 전비 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">공인 전비</label>
-            <div className="slider-value">
-              {tempBatteryInfo.efficiency.toFixed(1)} km/kWh
-            </div>
-          </div>
-          <input
-            type="range"
-            min={3}
-            max={10}
-            step={0.1}
-            value={tempBatteryInfo.efficiency}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                efficiency: Number(e.target.value),
-              })
-            }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 선호 충전 한도 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">선호 충전 한도</label>
-            <div className="slider-value">
-              {tempBatteryInfo.chargeLimit?.toFixed(1) ?? 85}%
-            </div>
-          </div>
-          <input
-            type="range"
-            min={60}
-            max={100}
-            step={0.1}
-            value={tempBatteryInfo.chargeLimit ?? 85}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                chargeLimit: Number(e.target.value),
-              })
-            }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 희망 목적지 배터리 잔량 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">희망 목적지 배터리 잔량</label>
-            <div className="slider-value">
-              {tempBatteryInfo.targetLevel?.toFixed(1) ?? 50}%
-            </div>
-          </div>
-          <input
-            type="range"
-            min={10}
-            max={80}
-            step={0.1}
-            value={tempBatteryInfo.targetLevel ?? 50}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                targetLevel: Number(e.target.value),
-              })
-            }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 배터리 용량 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">배터리 용량</label>
-            <div className="slider-value">{tempBatteryInfo.capacity} kWh</div>
-          </div>
-          <input
-            type="range"
-            min={20}
-            max={120}
-            step={1}
-            value={tempBatteryInfo.capacity}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                capacity: Number(e.target.value),
-              })
-            }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 외부 온도 */}
-        <div className="slider-group">
-          <div className="slider-header">
-            <label className="slider-label">외부 온도</label>
-            <div className="slider-value">{tempBatteryInfo.temperature}℃</div>
-          </div>
-          <input
-            type="range"
-            min={-20}
-            max={50}
-            step={1}
-            value={tempBatteryInfo.temperature}
-            onChange={(e) =>
-              setTempBatteryInfo({
-                ...tempBatteryInfo,
-                temperature: Number(e.target.value),
-              })
-            }
-            className="custom-slider"
-          />
-        </div>
-
-        {/* 충전소 선호 선택 */}
-        <div className="priority-select-group">
-          <button
-            className={`priority-btn ${
-              selectedPriority === "speed" ? "selected" : ""
-            }`}
-            onClick={() => setSelectedPriority("speed")}
-          >
-            속도 중시
-          </button>
-          <button
-            className={`priority-btn ${
-              selectedPriority === "reliability" ? "selected" : ""
-            }`}
-            onClick={() => setSelectedPriority("reliability")}
-          >
-            신뢰성 중시
-          </button>
-          <button
-            className={`priority-btn ${
-              selectedPriority === "comfort" ? "selected" : ""
-            }`}
-            onClick={() => setSelectedPriority("comfort")}
-          >
-            편의성 중시
-          </button>
-        </div>
-
-        {/* 설정 적용하기 버튼 */}
-        <button className="apply-settings-btn" onClick={handleApplySettings}>
-          설정 적용하기
+          }}
+          className="route-zoom-out-btn"
+          aria-label="전체 경로 보기"
+        >
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path
+              d="M9 4H4V9"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M4 9L10 3"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M19 4H24V9"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M24 9L18 3"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M19 24H24V19"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M24 19L18 25"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M9 24H4V19"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M4 19L10 25"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
         </button>
-      </div>
 
-      {/* 지도 */}
-      <div id="map_div" className="route-map-div"></div>
+        {/* 설정 패널 바깥 클릭 시 닫히는 오버레이 */}
+        {showSettings && (
+          <div
+            className="route-overlay"
+            onClick={() => setShowSettings(false)}
+          />
+        )}
 
-      {/* 하단 카드 슬라이드 */}
-      <div className="station-card-slider">
-        <div className="station-card-list">
-          {stationCards.map((card, idx) => (
-            <div
-              key={idx}
-              className={`station-card${
-                selectedStationIdx === idx ? " selected" : ""
+        {/* 슬라이드 패널 */}
+        <div className={`route-slide-panel ${showSettings ? "open" : ""}`}>
+          {/* 뒤로가기 버튼 */}
+          <button
+            className="route-slide-back-btn"
+            onClick={() => setShowSettings(false)}
+          >
+            ←
+          </button>
+          <h3>경로추천 옵션</h3>
+
+          {/* 배터리 잔량 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">배터리 잔량</label>
+              <div className="slider-value">
+                {tempBatteryInfo.level.toFixed(1)}%
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={0.1}
+              value={tempBatteryInfo.level}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  level: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 공인 전비 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">공인 전비</label>
+              <div className="slider-value">
+                {tempBatteryInfo.efficiency.toFixed(1)} km/kWh
+              </div>
+            </div>
+            <input
+              type="range"
+              min={3}
+              max={10}
+              step={0.1}
+              value={tempBatteryInfo.efficiency}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  efficiency: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 선호 충전 한도 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">선호 충전 한도</label>
+              <div className="slider-value">
+                {tempBatteryInfo.chargeLimit?.toFixed(1) ?? 85}%
+              </div>
+            </div>
+            <input
+              type="range"
+              min={60}
+              max={100}
+              step={0.1}
+              value={tempBatteryInfo.chargeLimit ?? 85}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  chargeLimit: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 희망 목적지 배터리 잔량 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">희망 목적지 배터리 잔량</label>
+              <div className="slider-value">
+                {tempBatteryInfo.targetLevel?.toFixed(1) ?? 50}%
+              </div>
+            </div>
+            <input
+              type="range"
+              min={10}
+              max={80}
+              step={0.1}
+              value={tempBatteryInfo.targetLevel ?? 50}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  targetLevel: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 배터리 용량 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">배터리 용량</label>
+              <div className="slider-value">{tempBatteryInfo.capacity} kWh</div>
+            </div>
+            <input
+              type="range"
+              min={20}
+              max={120}
+              step={1}
+              value={tempBatteryInfo.capacity}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  capacity: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 외부 온도 */}
+          <div className="slider-group">
+            <div className="slider-header">
+              <label className="slider-label">외부 온도</label>
+              <div className="slider-value">{tempBatteryInfo.temperature}℃</div>
+            </div>
+            <input
+              type="range"
+              min={-20}
+              max={50}
+              step={1}
+              value={tempBatteryInfo.temperature}
+              onChange={(e) =>
+                setTempBatteryInfo({
+                  ...tempBatteryInfo,
+                  temperature: Number(e.target.value),
+                })
+              }
+              className="custom-slider"
+            />
+          </div>
+
+          {/* 충전소 선호 선택 */}
+          <div className="priority-select-group">
+            <button
+              className={`priority-btn ${
+                selectedPriority === "speed" ? "selected" : ""
               }`}
-              onClick={() => {
-                setSelectedStationIdx(idx);
-
-                const selectedMarker = stationMarkers[idx];
-                if (selectedMarker) {
-                  mapRef.current.setCenter(selectedMarker.getPosition());
-                  mapRef.current.setZoom(17); // 확대까지
-                }
-              }}
+              onClick={() => setSelectedPriority("speed")}
             >
-              <div className="station-card-title">{card.name}</div>
-              <div className="station-card-info">
-                <span>총 소요 시간: {card.totalTime}</span>
-                <span>우회 시간: {card.detour}</span>
-                <span>{card.distance}</span>
-                <span>{card.fare}</span>
-                <span>
-                  충전 예상시간: {card.chargingTime} / 충전 후:
-                  {card.arrivalPercent}
-                </span>
-              </div>
-              <div className="station-card-charger">
-                {card.total === null
-                  ? "🔌 충전기 정보 없음"
-                  : `🔌 사용가능 ${card.available} / ${card.total}`}
-              </div>
-              {card.secondHop && (
-                <div className="sub-card">
-                  <p>2차 충전소: {card.secondHop}</p>
-                  <p>도착까지: {card.secondHopTime}</p>
-                  <p>충전시간: {card.secondHopChargingTime}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+              속도 중시
+            </button>
+            <button
+              className={`priority-btn ${
+                selectedPriority === "reliability" ? "selected" : ""
+              }`}
+              onClick={() => setSelectedPriority("reliability")}
+            >
+              신뢰성 중시
+            </button>
+            <button
+              className={`priority-btn ${
+                selectedPriority === "comfort" ? "selected" : ""
+              }`}
+              onClick={() => setSelectedPriority("comfort")}
+            >
+              편의성 중시
+            </button>
+          </div>
 
-      {/* 네비연결(안내시작) 버튼 */}
-      <button className="navi-start-btn" onClick={openTmapApp} >네비연결</button>
-    </div>
-  );
+          {/* 설정 적용하기 버튼 */}
+          <button className="apply-settings-btn" onClick={handleApplySettings}>
+            설정 적용하기
+          </button>
+        </div>
+
+        {/* 지도 */}
+        <div id="map_div" className="route-map-div"></div>
+
+        {/* 하단 카드 슬라이드 */}
+        <div className="station-card-slider">
+          <div className="station-card-list">
+            {stationCards.map((card, idx) => (
+              <div
+                key={idx}
+                className={`station-card${
+                  selectedStationIdx === idx ? " selected" : ""
+                }`}
+                onClick={() => {
+                  setSelectedStationIdx(idx);
+
+                  const selectedMarker = stationMarkers[idx];
+                  if (selectedMarker) {
+                    mapRef.current.setCenter(selectedMarker.getPosition());
+                    mapRef.current.setZoom(17); // 확대까지
+                  }
+                }}
+              >
+                <div className="station-card-title">{card.name}</div>
+                <div className="station-card-info">
+                  <span>총 소요 시간: {card.totalTime}</span>
+                  <span>우회 시간: {card.detour}</span>
+                  <span>{card.distance}</span>
+                  <span>{card.fare}</span>
+                  <span>
+                    충전 예상시간: {card.chargingTime} / 충전 후:
+                    {card.arrivalPercent}
+                  </span>
+                </div>
+                <div className="station-card-charger">
+                  {card.total === null
+                    ? "🔌 충전기 정보 없음"
+                    : `🔌 사용가능 ${card.available} / ${card.total}`}
+                </div>
+                {card.secondHop && (
+                  <div className="sub-card">
+                    <p>2차 충전소: {card.secondHop}</p>
+                    <p>도착까지: {card.secondHopTime}</p>
+                    <p>충전시간: {card.secondHopChargingTime}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 네비연결(안내시작) 버튼 */}
+        <button className="navi-start-btn" onClick={openTmapApp}>
+          네비연결
+        </button>
+      </div>
+    );
+  };
 }

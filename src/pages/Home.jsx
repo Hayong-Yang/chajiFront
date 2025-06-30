@@ -1104,7 +1104,6 @@ export default function Home() {
     });
   };
 
-
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
