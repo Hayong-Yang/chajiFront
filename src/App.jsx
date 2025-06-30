@@ -15,6 +15,7 @@ export default function App() {
     // path="/"는 기본 루트 URL입니다.→ 이 경로로 들어오면 자동으로 /login으로 리디렉션합니다.
     // 각 경로에 따라 해당 컴포넌트(Login, Register)가 렌더링됩니다.
 
+
     <Routes>
       <Route path="/" element={<Navigate to="/home" />} />
       <Route path="/home" element={<Home />} />
