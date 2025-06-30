@@ -1104,7 +1104,6 @@ export default function Home() {
     });
   };
 
-
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
@@ -2099,45 +2098,83 @@ export default function Home() {
           )}
         </motion.div>
         {showList && (
-          <div className="station-list-container">
+          <>
+            {/* 오버레이 */}
             <div
+              onClick={() => setShowList(false)}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.25)",
+                zIndex: 3400,
+                cursor: "pointer",
+              }}
+            />
+            <motion.div
+              className="station-list-motion-container"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{
+                position: "fixed",
+                top: 0,
+                right: 0,
+                height: "100vh",
+                width: "85vw",
+                maxWidth: 420,
+                background: "#fff",
+                zIndex: 3500,
+                boxShadow: "-2px 0 10px rgba(0,0,0,0.10)",
+                overflowY: "auto",
+                padding: "24px 18px 32px 18px",
+                borderRadius: "24px 0 0 24px",
               }}
             >
-              <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
-              <button
-                onClick={() => setShowList(false)}
+              <div
                 style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "20px",
-                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
-                title="닫기"
-              ></button>
-            </div>
-            <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-              {stations.map((st, idx) => (
-                <li
-                  key={st.statId + idx}
-                  className="station-item"
+              >
+                <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
+                <button
+                  onClick={() => setShowList(false)}
                   style={{
-                    marginBottom: "12px",
-                    borderBottom: "1px solid #eee",
-                    paddingBottom: "8px",
+                    background: "none",
+                    border: "none",
+                    fontSize: "20px",
+                    cursor: "pointer",
                   }}
+                  title="닫기"
                 >
-                  <strong>{st.statNm}</strong> ({st.bnm})<br />
-                  {st.addr}
-                  <br />
-                  점수: {st.recommendScore}
-                </li>
-              ))}
-            </ul>
-          </div>
+                  ✕
+                </button>
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+                {stations.map((st, idx) => (
+                  <li
+                    key={st.statId + idx}
+                    className="station-item"
+                    style={{
+                      marginBottom: "12px",
+                      borderBottom: "1px solid #eee",
+                      paddingBottom: "8px",
+                    }}
+                  >
+                    <strong>{st.statNm}</strong> ({st.bnm})<br />
+                    {st.addr}
+                    <br />
+                    점수: {st.recommendScore}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </>
         )}
         {/* 3. 사이드 드로어 */}
         {showDrawer && (
