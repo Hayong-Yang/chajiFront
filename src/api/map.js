@@ -94,13 +94,33 @@ if (!Array.isArray(markersRef.current)) {
       if (exists) return;
 
       const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-      const marker = new window.Tmapv2.Marker({
-        position: position,
-        map: mapInstance.current,
-        icon: station.logoUrl,
-        iconSize: new window.Tmapv2.Size(48, 72),
-        iconAnchor: new window.Tmapv2.Point(24, 72),
-      });
+      const labelHtml = `
+<div style="
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.25);
+      border: 1px solid #ccc;
+    ">
+      <img src="${logoUrl}" style="width: 24px; height: 24px;" />
+      <span>${baseFee}</span>
+    </div>
+    `;
+
+    return new window.Tmapv2.Marker({
+      position,
+      map,
+      iconHTML: labelHtml,
+      iconSize: new window.Tmapv2.Size(100, 40),
+      iconAnchor: new window.Tmapv2.Point(50, 40),
+      zIndex: 1000,
+    });
 
       marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
