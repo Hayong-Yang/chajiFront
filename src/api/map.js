@@ -2,6 +2,7 @@ import axios from "axios";
 import { fetchChargerFee } from "../api/fee";
 import { fetchRoamingFee } from "../api/roamingPrice";
 
+
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
 
@@ -32,11 +33,17 @@ export const getStationNear = async (
     console.warn("🚨 mapInstance.current가 없습니다!");
     return;
   }
-  if (!markersRef?.current || !Array.isArray(markersRef.current)) {
-    console.warn("🚨 markersRef.current가 비정상입니다:", markersRef?.current);
+   const zoom = mapInstance.current.getZoom();
+
+  // ✅ 줌레벨이 13 이하면 상세 마커는 무시
+  if (zoom <= 13) {
+    console.log("⛔ 상세 마커 로딩 중단 (줌레벨 <= 13)");
     return;
   }
-
+if (!Array.isArray(markersRef.current)) {
+  console.warn("🚨 markersRef.current가 배열이 아님. 초기화합니다.");
+  markersRef.current = [];
+}
   try {
     const response = await axios.post("/api/station/getStationNear", {
       lat: centerLat,
@@ -68,10 +75,30 @@ export const getStationNear = async (
         entry.marker === destMarkerRef.current
     );
 
-    // 버전 1. 새 마커 찍기+   // 새 마커 찍기
+    const existingStatIds = markersRef.current.map((entry) =>
+  entry.data.statId?.toString()
+);
 
+const feeMap = new Map();
+
+await Promise.all(
+  stations.map(async (station) => {
+    if (!station.busiId) return;
+    if (feeMap.has(station.busiId)) return;
+
+    try {
+      const fee = await fetchChargerFee(station.busiId);
+      feeMap.set(station.busiId, fee);
+    } catch (e) {
+      console.warn(`요금 조회 실패: ${station.busiId}`, e);
+      feeMap.set(station.busiId, "정보 없음");
+    }
+  })
+);
+    // 버전 1. 새 마커 찍기+   // 새 마커 찍기
     stations.forEach((station) => {
       const statIdStr = station.statId?.toString();
+      if (!statIdStr || existingStatIds.includes(statIdStr)) return;
       const isOrigin =
         originMarkerRef.current?.dataStatId?.toString() === statIdStr;
       const isDest =
@@ -82,15 +109,47 @@ export const getStationNear = async (
         (e) => e.data.statId?.toString() === statIdStr
       );
       if (exists) return;
+      
 
+       const baseFee = feeMap.get(station.busiId) ?? "정보 없음";
+       const fastMemberPrice = baseFee?.fastMemberPrice ?? "정보 없음";
       const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-      const marker = new window.Tmapv2.Marker({
-        position: position,
-        map: mapInstance.current,
-        icon: station.logoUrl,
-        iconSize: new window.Tmapv2.Size(48, 72),
-        iconAnchor: new window.Tmapv2.Point(24, 72),
-      });
+      const labelHtml = `
+ <div style="
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fefefe;
+    border-radius: 10px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e1e1e;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border: 1px solid #ddd;
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    line-height: 1;
+    white-space: nowrap;
+  ">
+    <img src="${station.logoUrl}" style="
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      object-fit: cover;
+    " />
+    <span>
+      ${fastMemberPrice}<span style="font-size: 11px; color: #888;">원</span>
+    </span>
+  </div>
+`;
+    const marker = new window.Tmapv2.Marker({
+      position,
+      map:mapInstance.current,
+      iconHTML: labelHtml,
+      iconSize: new window.Tmapv2.Size(100, 40),
+      iconAnchor: new window.Tmapv2.Point(50, 40),
+      zIndex: 1000,
+    });
 
       marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
@@ -147,7 +206,7 @@ export const registerMapCenterListener = (
   map,
   setStationNear,
   getStationNear,
-  mapInstanceRef,
+  mapInstance,
   markersRef,
   setSelectedStation,
   filterOptionsRef,
@@ -172,7 +231,7 @@ export const registerMapCenterListener = (
       await getStationNear(
         centerLat,
         centerLon,
-        mapInstanceRef,
+        mapInstance,
         markersRef,
         setSelectedStation,
         filterOptionsRef.current,
@@ -189,7 +248,7 @@ export const registerMapCenterListener = (
 
 //실시간 위치 추적 함수
 export const trackUserMovement = (
-  mapInstanceRef,
+  mapInstance,
   userMarkerRef,
   setStationNear,
   getStationNear,
@@ -211,7 +270,7 @@ export const trackUserMovement = (
         console.log("사용자 이동 감지:", newLat, newLon);
 
         // 사용자 마커 갱신 / 출력
-        const map = mapInstanceRef.current;
+        const map = mapInstance.current;
         if (!map) return;
 
         const positionObj = new window.Tmapv2.LatLng(newLat, newLon);
@@ -237,7 +296,7 @@ export const trackUserMovement = (
           getStationNear(
             newLat,
             newLon,
-            mapInstanceRef,
+            mapInstance,
             markersRef,
             setSelectedStation,
             filterOptionsRef.current,

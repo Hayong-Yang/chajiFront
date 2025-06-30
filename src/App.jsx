@@ -1,13 +1,13 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
-import Poi from "./pages/Poi";
 import RecommendRoute from "./pages/RecomendRoute";
 import Master from "./pages/master";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import CarRegister from "./pages/CarRegister";
-import FavoriteList from "./pages/FavoriteList";
+import Mypage from "./pages/Mypage";
+import EditProfile from "./pages/EditProfile";
 
 export default function App() {
     return (
@@ -18,13 +18,14 @@ export default function App() {
         <Routes>
             <Route path="/" element={<Navigate to="/home" />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/poi" element={<Poi />} />
             <Route path="/recommendRoute" element={<RecommendRoute />} />
             <Route path="/master" element={<Master />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/carRegister" element={<CarRegister />} />
             <Route path="/favorite/list" element={<FavoriteList />} />
+            <Route path="/mypage" element={<Mypage />} />
+            <Route path="/editprofile" element={<EditProfile />} />
         </Routes>
     );
 }

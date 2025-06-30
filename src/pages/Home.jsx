@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { handleZoomChange } from "../api/zoom";
 
 import {
     setStationNear,
@@ -320,7 +321,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
                 }}
                 className="autocomplete-input"
             />
-            {showList && suggestions.length > 0 && (
+            {showList && suggestions.length > 2 && (
                 <ul className="autocomplete-list">
                     {suggestions.map((item) => (
                         <li
@@ -328,6 +329,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
                             onClick={() => {
                                 onSelect(item);
                                 setShowList(false);
+                                setSuggestions([]);
                             }}
                             className="autocomplete-item"
                         >
@@ -353,6 +355,8 @@ export default function Home() {
     const [showList, setShowList] = useState(false); // 리스트 뷰 토글
     const [showDrawer, setShowDrawer] = useState(false);
     const [activeMenu, setActiveMenu] = useState("home"); // 선택된 메뉴
+    const [suggestions, setSuggestions] = useState([]);
+    const [query, setQuery] = useState("");
 
     // 전역 변수
     const [mode, setMode] = useState("search"); //검색창 구분
@@ -374,6 +378,7 @@ export default function Home() {
     const [destInput, setDestInput] = useState(""); //도착지 입력값
     const [selectedDestStation, setSelectedDestStation] = useState(null);
     const [selectedOriginStation, setSelectedOriginStation] = useState(null);
+    const zoomMarkers = useRef([]);
 
     // 충전소 상태 info 접근s
     const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
