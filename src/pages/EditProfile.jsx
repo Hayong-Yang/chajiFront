@@ -22,7 +22,21 @@ export default function EditProfile() {
       .catch(() => setMessage("사용자 정보를 불러오지 못했습니다."));
   }, [token]);
 
-  if (!user) return <div>로딩 중...</div>;
+  if (!user)
+    return (
+      <div className="loading-screen">
+        <div className="seal-wrapper">
+          <img
+            src="/seal-swim.png"
+            alt="로딩 중..."
+            className="swimming-seal-img"
+          />
+          <div className="bubble" />
+          <div className="bubble small" />
+        </div>
+        <p className="loading-text">충전 중입니다... 🔌</p>
+      </div>
+    );
 
   const handleUpdate = async () => {
     try {

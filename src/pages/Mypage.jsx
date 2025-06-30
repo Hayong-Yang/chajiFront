@@ -25,7 +25,21 @@ export default function Mypage() {
   const handleEditProfile = () => navigate("/editprofile");
   const handleCarRegister = () => navigate("/carRegister");
 
-  if (!user) return <div className="mypage-container">로딩 중...</div>;
+  if (!user)
+    return (
+      <div className="loading-screen">
+        <div className="seal-wrapper">
+          <img
+            src="/seal-swim.png"
+            alt="로딩 중..."
+            className="swimming-seal-img"
+          />
+          <div className="bubble" />
+          <div className="bubble small" />
+        </div>
+        <p className="loading-text">충전 중입니다... 🔌</p>
+      </div>
+    );
 
   return (
     <div className="mypage-container">
