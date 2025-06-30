@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { getUserInfo, logoutUser } from "../api/member";
+import { getMyCars } from "../api/memberCar";
 import { useNavigate, Link } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import "./Mypage.css";
 
 export default function Mypage() {
   const [user, setUser] = useState(null);
+  const [cars, setCars] = useState([]);
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("accessToken"));
@@ -14,6 +16,10 @@ export default function Mypage() {
     getUserInfo(token)
       .then((res) => setUser(res))
       .catch(() => setMessage("사용자 정보를 불러오지 못했습니다."));
+
+    getMyCars(token)
+      .then((res) => setCars(res))
+      .catch(() => console.warn("🚗 차량 정보를 불러오지 못했습니다."));
   }, [token]);
 
   const handleLogout = async () => {
@@ -68,10 +74,25 @@ export default function Mypage() {
       <hr />
 
       <h3>내 차량</h3>
-      <div className="car-box" onClick={handleCarRegister}>
-        <div className="car-image" />
-        <span className="car-text">내 전기차를 등록해보세요!</span>
-      </div>
+      {cars.length > 0 ? (
+        cars.map((car) => (
+          <div key={car.idx} className="car-box existing">
+            <div className="car-image" />
+            <div className="car-text">
+              <strong>{car.nickname}</strong>
+              <p>
+                {car.brand} {car.model} {car.year} {car.trim}
+              </p>
+              {car.isMain && <span className="main-badge">대표 차량</span>}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="car-box" onClick={handleCarRegister}>
+          <div className="car-image" />
+          <span className="car-text">내 전기차를 등록해보세요!</span>
+        </div>
+      )}
 
       <button className="logout-btn" onClick={handleLogout}>
         로그아웃
