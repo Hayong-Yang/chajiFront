@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { handleZoomChange } from "../api/zoom"
+import { handleZoomChange } from "../api/zoom";
 
 import {
   setStationNear,
@@ -254,7 +254,6 @@ const chargerTypeOptions = [
 // === 리스트보기 전용 서버 호출 함수 ===
 async function fetchStationList(filterOptions, lat, lon) {
   try {
-    
     const resp = await axios.post("/api/station/getStationNear", {
       lat,
       lon,
@@ -462,8 +461,8 @@ export default function Home() {
     setSelectedStation(meta);
     map.setCenter(position);
     map.setZoom(15);
-    setSuggestions([]);  // ✅ 자동완성 리스트 초기화
-    setQuery("");    
+    setSuggestions([]); // ✅ 자동완성 리스트 초기화
+    setQuery("");
 
     if (source === "origin") {
       setOriginInput(meta.statNm);
@@ -562,7 +561,7 @@ export default function Home() {
       return next;
     });
   };
-  
+
   const initTmap = async () => {
     // 1. 현재 위치 얻기
     try {
@@ -630,10 +629,10 @@ export default function Home() {
       destMarkerRef,
       memberCompanyRef
     );
-     setTimeout(() => {
-    onMapReady(); // mapInstance.current 확실히 존재할 시점
-  }, 0);
-}
+    setTimeout(() => {
+      onMapReady(); // mapInstance.current 확실히 존재할 시점
+    }, 0);
+  };
 
   // ***현재 위치 구하는 함수***
   const getCurrentLocation = () =>
@@ -821,22 +820,22 @@ export default function Home() {
       selectedStation.lon
     );
 
-      // ✅ 출발지가 없는 경우: 현재 위치를 출발지로 설정
-  if (!originMarkerRef.current) {
-    const originLat = centerLatRef.current;
-    const originLon = centerLonRef.current;
-    const originPos = new window.Tmapv2.LatLng(originLat, originLon);
+    // ✅ 출발지가 없는 경우: 현재 위치를 출발지로 설정
+    if (!originMarkerRef.current) {
+      const originLat = centerLatRef.current;
+      const originLon = centerLonRef.current;
+      const originPos = new window.Tmapv2.LatLng(originLat, originLon);
 
-    const marker = new window.Tmapv2.Marker({
-      position: originPos,
-      map: mapInstance.current,
-      // icon: "/img/logos/start.png",
-      // iconAnchor: new Tmapv2.Point(18, 48),
-    });
+      const marker = new window.Tmapv2.Marker({
+        position: originPos,
+        map: mapInstance.current,
+        // icon: "/img/logos/start.png",
+        // iconAnchor: new Tmapv2.Point(18, 48),
+      });
 
-    originMarkerRef.current = marker;
-    setOriginInput("현재 위치");
-  }
+      originMarkerRef.current = marker;
+      setOriginInput("현재 위치");
+    }
 
     // === 이전 출발지 마커 복원 ===
     if (destMarkerRef.current) {
@@ -1015,53 +1014,56 @@ export default function Home() {
   };
 
   // 지도 Zoomin out //
-const onMapReady = () => {
-  const map = mapInstance.current;
-  if (!map) {
-    console.warn("🗺️ mapInstance.current가 없습니다! onMapReady 실행 중단");
-    return;
-  }
+  const onMapReady = () => {
+    const map = mapInstance.current;
+    if (!map) {
+      console.warn("🗺️ mapInstance.current가 없습니다! onMapReady 실행 중단");
+      return;
+    }
 
-  console.log("🧭 초기 줌 레벨:", map.getZoom());
+    console.log("🧭 초기 줌 레벨:", map.getZoom());
 
-  // 🔁 디바운스 함수 생성 (300ms)
-  let debounceTimer = null;
-  const debounceFetch = () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      try {
-        console.log("🚀 마커 갱신 실행 (디바운스)");
-    await handleZoomChange(
-  mapInstance,                      // ✅ map이 아닌 ref 넘기기
-  markersRef,
-  setSelectedStation,
-  filterOptionsRef,
-  originMarkerRef,
-  destMarkerRef,
-  memberCompanyRef
-);
-  console.log("✅ 마커 갱신 완료:", markersRef.current?.length || 0, "개");
-      } catch (err) {
-        console.error("❌ 마커 갱신 중 오류:", err);
-      }
-    }, 200); // ← 여기서 지연 시간 조절 가능
+    // 🔁 디바운스 함수 생성 (300ms)
+    let debounceTimer = null;
+    const debounceFetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        try {
+          console.log("🚀 마커 갱신 실행 (디바운스)");
+          await handleZoomChange(
+            mapInstance, // ✅ map이 아닌 ref 넘기기
+            markersRef,
+            setSelectedStation,
+            filterOptionsRef,
+            originMarkerRef,
+            destMarkerRef,
+            memberCompanyRef
+          );
+          console.log(
+            "✅ 마커 갱신 완료:",
+            markersRef.current?.length || 0,
+            "개"
+          );
+        } catch (err) {
+          console.error("❌ 마커 갱신 중 오류:", err);
+        }
+      }, 200); // ← 여기서 지연 시간 조절 가능
+    };
+
+    // 최초 1회 마커 로딩
+    debounceFetch();
+
+    // 이벤트 리스너 등록
+    map.addListener("zoom_changed", () => {
+      console.log("🔍 줌 레벨 변경:", map.getZoom());
+      debounceFetch();
+    });
+
+    map.addListener("dragend", () => {
+      console.log("🧭 지도 드래그 완료");
+      debounceFetch();
+    });
   };
-
-  // 최초 1회 마커 로딩
-  debounceFetch();
-
-  // 이벤트 리스너 등록
-  map.addListener("zoom_changed", () => {
-    console.log("🔍 줌 레벨 변경:", map.getZoom());
-    debounceFetch();
-  });
-
-  map.addListener("dragend", () => {
-    console.log("🧭 지도 드래그 완료");
-    debounceFetch();
-  });
-};
-
 
   // 화면 부분
   return (
