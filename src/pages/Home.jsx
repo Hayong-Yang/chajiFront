@@ -379,7 +379,6 @@ export default function Home() {
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
   const zoomMarkers = useRef([]);
-  const memberCompanyRef = useRef(null)
 
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
