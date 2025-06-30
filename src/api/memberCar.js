@@ -6,3 +6,9 @@ export const getMyCars = async (token) => {
   });
   return res.data;
 };
+
+export const deleteMyCar = async (carIdx, token) => {
+  await axios.delete(`/api/member-car/delete/${carIdx}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
