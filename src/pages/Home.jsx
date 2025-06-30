@@ -2183,7 +2183,14 @@ export default function Home() {
 
               {/* 이하 기존 상세/슬라이드 구조 유지 */}
               {isPanelExpanded && (
-                <div className="extra-info" style={{ padding: "0 0 12px 0" }}>
+                <div
+                  className="extra-info"
+                  style={{
+                    padding: "0 0 12px 0",
+                    maxHeight: "55vh",
+                    overflowY: "auto",
+                  }}
+                >
                   {/* 충전기 정보: 급속/완속 분류, 가로 카드 슬라이드 */}
                   <div style={{ margin: "18px 0 10px 0" }}>
                     <div
@@ -2488,6 +2495,55 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* extra-info 내부 하단에 신고/제보, 리뷰쓰기 버튼 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      margin: "18px 0 0 0",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      style={{
+                        flex: 1,
+                        background: "#31ba81",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 20 }}>📢</span> 신고/제보
+                    </button>
+                    <button
+                      style={{
+                        flex: 1,
+                        background: "#fff",
+                        color: "#1976d2",
+                        border: "2px solid #b2e0f7",
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 20 }}>✏️</span> 리뷰 쓰기
+                    </button>
                   </div>
                 </div>
               )}
