@@ -1,4 +1,6 @@
 import axios from "axios";
+// import { fetchChargerFee } from "../api/fee";
+// import { fetchRoamingFee } from "../api/roamingPrice";
 
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
@@ -24,18 +26,23 @@ export const getStationNear = async (
   filterOptions = {},
   originMarkerRef,
   destMarkerRef,
-  neworiginMarkerRef,
-  newdestMarkerRef
+  memberCompanyRef
 ) => {
   if (!mapInstance?.current) {
     console.warn("🚨 mapInstance.current가 없습니다!");
     return;
   }
-  if (!markersRef?.current || !Array.isArray(markersRef.current)) {
-    console.warn("🚨 markersRef.current가 비정상입니다:", markersRef?.current);
+   const zoom = mapInstance.current.getZoom();
+
+  // ✅ 줌레벨이 13 이하면 상세 마커는 무시
+  if (zoom <= 13) {
+    console.log("⛔ 상세 마커 로딩 중단 (줌레벨 <= 13)");
     return;
   }
-
+if (!Array.isArray(markersRef.current)) {
+  console.warn("🚨 markersRef.current가 배열이 아님. 초기화합니다.");
+  markersRef.current = [];
+}
   try {
     const response = await axios.post("/api/station/getStationNear", {
       lat: centerLat,
@@ -67,11 +74,14 @@ export const getStationNear = async (
         entry.marker === destMarkerRef.current
     );
 
+    const existingStatIds = markersRef.current.map((entry) =>
+  entry.data.statId?.toString()
+);
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
-    // !originMarkerRef?.current || !destMarkerRef?.current || 
 
     stations.forEach((station) => {
       const statIdStr = station.statId?.toString();
+      if (!statIdStr || existingStatIds.includes(statIdStr)) return;
       const isOrigin =
         originMarkerRef.current?.dataStatId?.toString() === statIdStr;
       const isDest =
@@ -92,37 +102,68 @@ export const getStationNear = async (
         iconAnchor: new window.Tmapv2.Point(24, 72),
       });
 
-      marker.addListener("click", () => {
+      marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
-        setSelectedStation?.(station);
+
+        if (!station.busiId) {
+          console.warn("🚨 busiId 없음, 요금 정보 생략", station);
+          setSelectedStation(station);
+          return;
+        }
+
+        try {
+          // 기본 요금
+          const baseFee = await fetchChargerFee(station.busiId);
+          console.log("✅ 기본 요금:", baseFee);
+
+          // 로밍 요금
+          let roamingFee;
+          const currentCompany = memberCompanyRef?.current;
+          console.log("📍 클릭 시 최신 memberCompany 값:", currentCompany);
+
+          if (currentCompany) {
+            roamingFee = await fetchRoamingFee(currentCompany, station.busiId);
+            console.log("✅ 로밍 요금:", roamingFee);
+          } else {
+            roamingFee = "회원사를 먼저 선택해주세요.";
+          }
+
+          setSelectedStation({
+            ...station,
+            feeInfo: baseFee,
+            roamingInfo: typeof roamingFee === "string" ? roamingFee : null,
+          });
+        } catch (error) {
+          console.warn("❌ 요금 정보 에러:", error);
+          setSelectedStation({
+            ...station,
+            feeInfo: "기본 요금 불러오기 실패",
+            roamingInfo: "로밍 요금 불러오기 실패",
+          });
+        }
       });
 
       // 이제 entry 형태로 저장
       markersRef.current.push({ data: station, marker: marker });
     });
->>>>>>> ef41ba274a1af594c4edb19a0984dc9a21d3e43c
   } catch (error) {
     console.error("서버 전송 에러:", error);
     return [];
   }
 }; //sendCenterToServer 함수 끝
 
-
-
-
-
-
 //***드래그, 줌, 이동 등 모든 조작 끝난 후 화면 중심 위도 경도 구하기 함수***
 export const registerMapCenterListener = (
   map,
   setStationNear,
   getStationNear,
-  mapInstanceRef,
+  mapInstance,
   markersRef,
   setSelectedStation,
   filterOptionsRef,
   originMarkerRef, // 추가
-  destMarkerRef
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   let debounceTimer = null;
 
@@ -141,12 +182,13 @@ export const registerMapCenterListener = (
       await getStationNear(
         centerLat,
         centerLon,
-        mapInstanceRef,
+        mapInstance,
         markersRef,
         setSelectedStation,
         filterOptionsRef.current,
         originMarkerRef,
-        destMarkerRef
+        destMarkerRef,
+        memberCompanyRef
       );
     }, 300);
   };
@@ -157,7 +199,7 @@ export const registerMapCenterListener = (
 
 //실시간 위치 추적 함수
 export const trackUserMovement = (
-  mapInstanceRef,
+  mapInstance,
   userMarkerRef,
   setStationNear,
   getStationNear,
@@ -165,7 +207,8 @@ export const trackUserMovement = (
   setSelectedStation,
   filterOptionsRef,
   originMarkerRef,
-  destMarkerRef
+  destMarkerRef,
+  memberCompanyRef
 ) => {
   const lastUserUpdateTimeRef = { current: 0 }; // 로컬 ref 대체
   const USER_UPDATE_INTERVAL = 10000; // 10초
@@ -178,7 +221,7 @@ export const trackUserMovement = (
         console.log("사용자 이동 감지:", newLat, newLon);
 
         // 사용자 마커 갱신 / 출력
-        const map = mapInstanceRef.current;
+        const map = mapInstance.current;
         if (!map) return;
 
         const positionObj = new window.Tmapv2.LatLng(newLat, newLon);
@@ -204,12 +247,13 @@ export const trackUserMovement = (
           getStationNear(
             newLat,
             newLon,
-            mapInstanceRef,
+            mapInstance,
             markersRef,
             setSelectedStation,
             filterOptionsRef.current,
             originMarkerRef, // ← 반드시 추가
-            destMarkerRef
+            destMarkerRef,
+            memberCompanyRef
           );
         } else {
           console.log("사용자 위치 변경: 서버 요청 대기 중...");
