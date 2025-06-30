@@ -346,6 +346,9 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 
 export default function Home() {
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [memberCompany, setMemberCompany] = useState("ME");
+  const memberCompanyRef = useRef("ME"); // ⬅️ 추가
 
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
@@ -399,6 +402,10 @@ export default function Home() {
   const filterOptionsRef = useRef(filterOptions); // 최신 필터 상태 추적용
   const drawerRef = useRef(null); // 사이드 드로어 영역 참조
   const infoPanelRef = useRef(null);
+
+  useEffect(() => {
+    memberCompanyRef.current = memberCompany; // ⬅️ 상태가 변경될 때 ref도 갱신
+  }, [memberCompany]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -525,7 +532,8 @@ export default function Home() {
       mapInstance,
       markersRef,
       setSelectedStation,
-      options
+      options,
+      memberCompanyRef
     );
   };
 
@@ -590,7 +598,8 @@ export default function Home() {
       setSelectedStation,
       filterOptionsRef, // 필터 옵션 전달
       originMarkerRef,
-      destMarkerRef
+      destMarkerRef,
+      memberCompanyRef
     );
 
     console.log("전송할 필터옵션:", filterOptions);
@@ -605,7 +614,8 @@ export default function Home() {
       setSelectedStation,
       filterOptionsRef, // 항상 최신값 유지되도록 ref 전달
       originMarkerRef, // 추가
-      destMarkerRef
+      destMarkerRef,
+      memberCompanyRef
     );
     // 7. 실시간으로 사용자 움직임 감지
     // + sendCenterToServer 해서 중심 위경도 전달, 충전소 호출
@@ -618,7 +628,8 @@ export default function Home() {
       setSelectedStation,
       filterOptionsRef,
       originMarkerRef,
-      destMarkerRef
+      destMarkerRef,
+      memberCompanyRef
     );
      setTimeout(() => {
     onMapReady(); // mapInstance.current 확실히 존재할 시점
@@ -920,7 +931,8 @@ export default function Home() {
       setSelectedStation,
       filterOptions,
       originMarkerRef, // ← 반드시 추가
-      destMarkerRef
+      destMarkerRef,
+      memberCompanyRef
     );
     setActiveDropdown(null);
   };
@@ -957,7 +969,8 @@ export default function Home() {
       setSelectedStation,
       filterOptionsRef.current,
       originMarkerRef,
-      destMarkerRef
+      destMarkerRef,
+      memberCompanyRef
     );
   };
 
@@ -1089,6 +1102,35 @@ const onMapReady = () => {
             </button>
           </>
         )}
+
+        <div style={{ position: "absolute", top: 80, left: 10, zIndex: 1000 }}>
+          <label
+            htmlFor="memberCompany"
+            style={{ fontWeight: "bold", color: "#333" }}
+          >
+            로밍 요금 기준 회원사
+          </label>
+          <select
+            id="memberCompany"
+            value={memberCompany || ""}
+            onChange={(e) =>
+              setMemberCompany(e.target.value !== "" ? e.target.value : null)
+            }
+            style={{
+              padding: "8px 12px",
+              fontSize: "14px",
+              borderRadius: "8px",
+              marginLeft: "10px",
+            }}
+          >
+            <option value="">-- 회원사 선택 --</option>
+            {providerOptions.map((opt) => (
+              <option key={opt.code} value={opt.code}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* 필터 아이콘 및 창 */}
@@ -1406,11 +1448,60 @@ const onMapReady = () => {
             className="drag-handle"
             onClick={() => setIsPanelExpanded((prev) => !prev)}
           ></div>
+
           {selectedStation && (
             <>
               <p>{selectedStation.statNm}</p>
+              <button
+                className={`favorite-button ${isFavorite ? "on" : ""}`}
+                onClick={() => setIsFavorite((prev) => !prev)}
+                title="즐겨찾기"
+              >
+                {isFavorite ? "⭐" : "☆"}
+              </button>
               <p>{selectedStation.bnm}</p>
               <p>{selectedStation.addr}</p>
+
+              <h4>💰 충전 요금</h4>
+              {selectedStation.feeInfo &&
+              (selectedStation.feeInfo.fastMemberPrice != null ||
+                selectedStation.feeInfo.fastNonmemberPrice != null ||
+                selectedStation.feeInfo.lowMemberPrice != null ||
+                selectedStation.feeInfo.lowNonmemberPrice != null) ? (
+                <>
+                  <ul>
+                    <li>
+                      급속 요금 (회원):{" "}
+                      {selectedStation.feeInfo.fastMemberPrice ?? "정보 없음"}{" "}
+                      원/kWh
+                    </li>
+                    <li>
+                      급속 요금 (비회원):{" "}
+                      {selectedStation.feeInfo.fastNonmemberPrice ??
+                        "정보 없음"}{" "}
+                      원/kWh
+                    </li>
+                    <li>
+                      완속 요금 (회원):{" "}
+                      {selectedStation.feeInfo.lowMemberPrice ?? "정보 없음"}{" "}
+                      원/kWh
+                    </li>
+                    <li>
+                      완속 요금 (비회원):{" "}
+                      {selectedStation.feeInfo.lowNonmemberPrice ?? "정보 없음"}{" "}
+                      원/kWh
+                    </li>
+                  </ul>
+                  {selectedStation.roamingInfo && (
+                    <div style={{ marginTop: "10px" }}>
+                      <strong>🔁 로밍 안내:</strong>{" "}
+                      {selectedStation.roamingInfo}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p>요금 정보 없음</p>
+              )}
 
               <h4>⚡ 충전기 정보</h4>
               <ul style={{ textAlign: "left", paddingLeft: 10 }}>
@@ -1482,6 +1573,20 @@ const onMapReady = () => {
                 <div className="extra-info">
                   <h4>📍 상세 위치 정보</h4>
                   <p>운영시간: {selectedStation.useTime || "정보 없음"}</p>
+                  <p>
+                    운영기관 연락처: {selectedStation.busiCall || "정보 없음"}
+                  </p>
+                  <p>
+                    주차료 :{" "}
+                    {selectedStation.parkingFree === "Y"
+                      ? "무료"
+                      : selectedStation.parkingFree === "N"
+                      ? "유료"
+                      : "정보 없음"}
+                  </p>
+                  <p>
+                    이용자 제한 : {selectedStation.limitDetail || "정보 없음"}
+                  </p>
                   {/* 기타 표시할 정보들 추가 */}
                 </div>
               )}

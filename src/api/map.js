@@ -1,6 +1,7 @@
 import axios from "axios";
-// import { fetchChargerFee } from "../api/fee";
-// import { fetchRoamingFee } from "../api/roamingPrice";
+import { fetchChargerFee } from "../api/fee";
+import { fetchRoamingFee } from "../api/roamingPrice";
+
 
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
