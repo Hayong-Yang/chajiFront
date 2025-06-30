@@ -15,6 +15,7 @@ import "./home.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
 import { faLocationArrow } from "@fortawesome/free-solid-svg-icons";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 
 function timeAgo(lastTedt) {
   if (!lastTedt || lastTedt.length !== 14) return "정보 없음";
@@ -1281,8 +1282,32 @@ export default function Home() {
         </button>
         {/* 리스트보기 버튼 */}
         <button className="seal-button" onClick={handleShowList}>
-          <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
-          {showList ? "닫기" : "리스트 보기"}
+          <svg
+            className="book-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="3" fill="#fff" />
+            <rect
+              x="5.5"
+              y="6.5"
+              width="13"
+              height="11"
+              rx="1.5"
+              fill="#1976d2"
+            />
+            <rect x="7.5" y="8.5" width="9" height="7" rx="1" fill="#fff" />
+            <rect
+              x="9"
+              y="10.5"
+              width="6"
+              height="1.5"
+              rx="0.75"
+              fill="#1976d2"
+            />
+            <rect x="9" y="13" width="4" height="1" rx="0.5" fill="#1976d2" />
+          </svg>
         </button>
         {/* 지도 위 인라인 필터 바 */}
         <div className="inline-filter-bar">
@@ -2163,7 +2188,7 @@ export default function Home() {
                 <button
                   style={{
                     flex: 2,
-                    background: "#31ba81",
+                    background: "#1976d2",
                     border: "none",
                     borderRadius: 12,
                     fontWeight: 700,
@@ -2509,7 +2534,7 @@ export default function Home() {
                     <button
                       style={{
                         flex: 1,
-                        background: "#31ba81",
+                        background: "#1976d2",
                         color: "#fff",
                         border: "none",
                         borderRadius: 12,
@@ -2772,23 +2797,7 @@ export default function Home() {
           </button>
           <button
             style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              fontSize: 15,
-              color: "#222",
-              cursor: "pointer",
-            }}
-            onClick={() => setActiveMenu("favorite")}
-          >
-            <span style={{ fontSize: 22, marginBottom: 2 }}>⭐</span>
-            즐겨찾기
-          </button>
-          <button
-            style={{
-              background: "#31ba81",
+              background: "#1976d2",
               border: "none",
               borderRadius: 12,
               color: "white",
@@ -2803,8 +2812,26 @@ export default function Home() {
             }}
             onClick={handleRecommendClick}
           >
-            <span style={{ fontSize: 22, marginBottom: 2 }}>🚗</span>
+            <span style={{ fontSize: 22, marginBottom: 2 }}>
+              <FontAwesomeIcon icon={faWaveSquare} />
+            </span>
             경로추천
+          </button>
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 15,
+              color: "#222",
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveMenu("favorite")}
+          >
+            <span style={{ fontSize: 22, marginBottom: 2 }}>☆</span>
+            즐겨찾기
           </button>
         </div>
       </div>
