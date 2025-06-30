@@ -1264,7 +1264,7 @@ export default function Home() {
                 }}
                 title="경로 추천"
               >
-                +
+                <FontAwesomeIcon icon={faWaveSquare} />
               </button>
             </div>
           </div>
