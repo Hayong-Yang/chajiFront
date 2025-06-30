@@ -78,8 +78,24 @@ if (!Array.isArray(markersRef.current)) {
     const existingStatIds = markersRef.current.map((entry) =>
   entry.data.statId?.toString()
 );
-    // 버전 1. 새 마커 찍기+   // 새 마커 찍기
 
+const feeMap = new Map();
+
+await Promise.all(
+  stations.map(async (station) => {
+    if (!station.busiId) return;
+    if (feeMap.has(station.busiId)) return;
+
+    try {
+      const fee = await fetchChargerFee(station.busiId);
+      feeMap.set(station.busiId, fee);
+    } catch (e) {
+      console.warn(`요금 조회 실패: ${station.busiId}`, e);
+      feeMap.set(station.busiId, "정보 없음");
+    }
+  })
+);
+    // 버전 1. 새 마커 찍기+   // 새 마커 찍기
     stations.forEach((station) => {
       const statIdStr = station.statId?.toString();
       if (!statIdStr || existingStatIds.includes(statIdStr)) return;
@@ -93,15 +109,47 @@ if (!Array.isArray(markersRef.current)) {
         (e) => e.data.statId?.toString() === statIdStr
       );
       if (exists) return;
+      
 
+       const baseFee = feeMap.get(station.busiId) ?? "정보 없음";
+       const fastMemberPrice = baseFee?.fastMemberPrice ?? "정보 없음";
       const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-      const marker = new window.Tmapv2.Marker({
-        position: position,
-        map: mapInstance.current,
-        icon: station.logoUrl,
-        iconSize: new window.Tmapv2.Size(48, 72),
-        iconAnchor: new window.Tmapv2.Point(24, 72),
-      });
+      const labelHtml = `
+ <div style="
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fefefe;
+    border-radius: 10px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e1e1e;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border: 1px solid #ddd;
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    line-height: 1;
+    white-space: nowrap;
+  ">
+    <img src="${station.logoUrl}" style="
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      object-fit: cover;
+    " />
+    <span>
+      ${fastMemberPrice}<span style="font-size: 11px; color: #888;">원</span>
+    </span>
+  </div>
+`;
+    const marker = new window.Tmapv2.Marker({
+      position,
+      map:mapInstance.current,
+      iconHTML: labelHtml,
+      iconSize: new window.Tmapv2.Size(100, 40),
+      iconAnchor: new window.Tmapv2.Point(50, 40),
+      zIndex: 1000,
+    });
 
       marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);
