@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import haversineDistance from "../utils/haversineUtil";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./RecomendRoute.css";
+import {
+  getInterpolatedTemperature,
+  getTemperatureWeight,
+} from "../utils/tempWeightUtil";
+import { calculateRoadWeightByVehicle } from "../utils/roadWeightUtil";
+
+import {
+  estimateArrivalBattery,
+  estimateChargingTime,
+} from "../utils/estimateChargingTimeUtil";
 
 export default function RecommendRoute() {
   const mapRef = useRef(null);
@@ -11,16 +21,33 @@ export default function RecommendRoute() {
   const [waypointMarkers, setWaypointMarkers] = useState([]);
   const [waypointsLatLng, setWaypointsLatLng] = useState([]);
   const [stationMarkers, setStationMarkers] = useState([]);
-  const [selectedPriority, setSelectedPriority] = useState("speed"); // ✅ 기본값 설정
+  const [selectedPriority, setSelectedPriority] = useState("speed"); //  기본값 설정
   const [showSettings, setShowSettings] = useState(false);
   const [stationCards, setStationCards] = useState([]);
+
+  const userVehicle = {
+    cityEv: 5.5, // 도심 전비 (km/kWh)
+    highwayEv: 4.4, // 고속 전비 (km/kWh)
+  };
   const [batteryInfo, setBatteryInfo] = useState({
-    level: 20,
+    level: 50,
     capacity: 70,
     efficiency: 5.0,
-    temperature: 26,
+    temperature: 15,
+    chargeLimit: 85,
+    targetLevel: 20,
+  });
+  // 임시 배터리 정보 상태 추가
+  const [tempBatteryInfo, setTempBatteryInfo] = useState({
+    level: 50,
+    capacity: 70,
+    efficiency: 5.0,
+    temperature: 15,
+    chargeLimit: 85,
+    targetLevel: 20,
   });
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     originInput,
     destInput,
@@ -37,58 +64,31 @@ export default function RecommendRoute() {
   } = location.state || {};
 
   const [filters, setFilters] = useState(filterOptions);
+
+  // 출발지와 목적지 정보를 상태로 관리
+  const [originInfo, setOriginInfo] = useState({
+    input: originInput || "",
+    coords: originCoords || { lat: 37.504198, lon: 127.04894 },
+  });
+
+  const [destInfo, setDestInfo] = useState({
+    input: destInput || "",
+    coords: destCoords || { lat: 35.1631, lon: 129.1635 },
+  });
+
   // const startLat = 37.504198,
   //   startLon = 127.04894;
   // const endLat = 35.1631,
   //   endLon = 129.1635;
-  const startLat = originCoords.lat ?? 37.504198;
-  const startLon = originCoords.lon ?? 127.04894;
-  const endLat = destCoords.lat ?? 35.1631;
-  const endLon = destCoords.lon ?? 129.1635;
+  const startLat = originInfo.coords.lat;
+  const startLon = originInfo.coords.lon;
+  const endLat = destInfo.coords.lat;
+  const endLon = destInfo.coords.lon;
 
   const { freeParking, noLimit, outputMin, outputMax, type, provider } =
     filterOptions;
 
   const [selectedStationIdx, setSelectedStationIdx] = useState(0);
-
-  // 예시 데이터
-  // const stationCards = [
-  //   {
-  //     name: "역삼역 충전소",
-  //     totalTime: "2시간 10분",
-  //     detour: "5분",
-  //     available: 3,
-  //     total: 6,
-  //   },
-  //   {
-  //     name: "강남역 충전소",
-  //     totalTime: "2시간 15분",
-  //     detour: "7분",
-  //     available: 2,
-  //     total: 4,
-  //   },
-  //   {
-  //     name: "서초역 충전소",
-  //     totalTime: "2시간 20분",
-  //     detour: "10분",
-  //     available: 1,
-  //     total: 3,
-  //   },
-  //   {
-  //     name: "양재역 충전소",
-  //     totalTime: "2시간 25분",
-  //     detour: "12분",
-  //     available: 4,
-  //     total: 5,
-  //   },
-  //   {
-  //     name: "삼성역 충전소",
-  //     totalTime: "2시간 30분",
-  //     detour: "15분",
-  //     available: 0,
-  //     total: 2,
-  //   },
-  // ];
 
   const routeOptions = [
     { value: "0", label: "차지추천" },
@@ -97,7 +97,26 @@ export default function RecommendRoute() {
     { value: "4", label: "고속도로우선" },
     { value: "10", label: "최단거리" },
   ];
+  // 날짜 세팅
+  useEffect(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const avgTemp = getInterpolatedTemperature(month, day);
 
+    setBatteryInfo((prev) => ({
+      ...prev,
+      temperature: avgTemp,
+    }));
+    setTempBatteryInfo((prev) => ({
+      // 임시 상태도 초기화
+      ...prev,
+      temperature: avgTemp,
+    }));
+
+    console.log("📌 평균 기온 초기화 완료:", avgTemp);
+  }, []); // 의존성 배열에서 온도 제거
+  // 맵 세팅
   useEffect(() => {
     const map = new Tmapv2.Map("map_div", {
       center: new Tmapv2.LatLng(startLat, startLon),
@@ -107,19 +126,32 @@ export default function RecommendRoute() {
     });
     mapRef.current = map;
 
-    new Tmapv2.Marker({
-      position: new Tmapv2.LatLng(startLat, startLon),
-      icon: "/img/myLocationIcon/currentLocation.png",
-      iconSize: new window.Tmapv2.Size(48, 72),
-      map,
-    });
-    new Tmapv2.Marker({
-      position: new Tmapv2.LatLng(endLat, endLon),
-      icon: "/img/myLocationIcon/currentLocation.png",
-      iconSize: new window.Tmapv2.Size(48, 72),
-      map,
-    });
-  }, []);
+    // 출발지와 목적지 마커 추가 함수
+    const addMarkers = () => {
+      new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(startLat, startLon),
+        icon: "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+        map,
+      });
+      new Tmapv2.Marker({
+        position: new Tmapv2.LatLng(endLat, endLon),
+        icon: "/img/myLocationIcon/currentLocation.png",
+        iconSize: new window.Tmapv2.Size(48, 72),
+        map,
+      });
+    };
+
+    addMarkers();
+  }, [startLat, startLon, endLat, endLon]); // 의존성 배열에 좌표 추가
+
+  useEffect(() => {
+    // 조건: 맵 로딩 완료 && 평균 온도 세팅 완료
+    if (mapRef.current && batteryInfo.temperature !== 15) {
+      console.log("📍 자동 경로 추천 시작");
+      requestRoute();
+    }
+  }, [mapRef.current, batteryInfo.temperature]);
 
   const resetMap = () => {
     drawnPolylines.forEach((polyline) => polyline.setMap(null));
@@ -187,6 +219,8 @@ export default function RecommendRoute() {
       priority: selectedPriority, // 👈 사용자가 선택한 우선순위
     };
 
+    console.log();
+
     // 3. tmap 경로안내 api 호출
     const res = await fetch(
       "https://apis.openapi.sk.com/tmap/routes?version=1&format=json",
@@ -228,6 +262,8 @@ export default function RecommendRoute() {
       capacity: batteryCapacity,
       efficiency: baseEfficiency,
       temperature,
+      chargeLimit,
+      targetLevel,
     } = batteryInfo;
 
     // 4. 웨이포인트 계산
@@ -297,8 +333,17 @@ export default function RecommendRoute() {
     // console.log("위경도 웨이포인트 리스트:", latlngList);
 
     // 5. 충전소 호출 전에 주행 가능 거리 계산
-    const tempFactor = temperature <= -10 ? 0.8 : 1.0;
-    const roadFactor = routeInfo.averageWeight || 1.0;
+
+    const tempFactor = getTemperatureWeight(temperature);
+
+    const roadFactor = calculateRoadWeightByVehicle(
+      userVehicle.cityEv,
+      userVehicle.highwayEv,
+      routeInfo.cityKm,
+      routeInfo.highwayKm,
+      routeInfo.totalTime
+    );
+
     const reachableDistance =
       (batteryLevelPercent / 100) *
       batteryCapacity *
@@ -326,7 +371,15 @@ export default function RecommendRoute() {
     // console.log("🚩 포함된 웨이포인트 수:", includedList.length, "개");
 
     // 7. 웨이포인트 근처 충전소 호출 + 반경기반 필터링 + 점수화 필터링 + 우회시간 필터링
-    handleFindNearbyStations(includedList, hasHighway, payload, baseTime);
+    handleFindNearbyStations(
+      includedList,
+      hasHighway,
+      payload,
+      baseTime,
+      { lat: startLat, lng: startLon },
+      { lat: endLat, lng: endLon },
+      totalDistance / 1000
+    );
   };
 
   // ******************************************************
@@ -389,11 +442,19 @@ export default function RecommendRoute() {
     latlngList,
     hasHighway,
     payload,
-    baseTime
+    baseTime,
+    originCoords,
+    destCoords,
+    totalDistanceKm
   ) => {
+    // console.log("출발-목적지 거리: ", totalDistanceKm);
+    // console.log("출발 위경도: ", originCoords);
+    // console.log("도착 위경도: ", destCoords);
+
     // 1. 기존 추천 마커 제거
     stationMarkers.forEach((marker) => marker.setMap(null));
     setStationMarkers([]);
+
     // 2. 웨이포인트, 전체경로 구간별로 10개 후보 충전소 선별
     const res = await fetch("/api/station/getStationsNearWaypoints", {
       method: "POST",
@@ -403,12 +464,14 @@ export default function RecommendRoute() {
       body: JSON.stringify({
         waypoints: latlngList,
         highway: hasHighway,
+        origin: originCoords,
+        dest: destCoords,
+        distance: totalDistanceKm,
         ...payload, // 전개 연산자로 편입
       }),
     });
 
     const data = await res.json();
-    // console.log("📍 세미 10개 충전소 목록:", data);
 
     // 3.각 충전소별 출발지와 도착지 설정 (위에서 정의한 startLat/startLon 등 사용)
     const start = { lat: startLat, lng: startLon };
@@ -417,8 +480,12 @@ export default function RecommendRoute() {
     // 4. 각 충전소에 대해 detourTime 병렬 호출
     const evaluatedStations = await Promise.all(
       data.map(async (station) => {
-        const totalTime = await getDetourTime(start, station, end); // 전체 경유 시간
-        const detourTime = baseTime != null ? totalTime - baseTime : null; // ⭐️ 기본 경로 시간과의 차이
+        const { totalTime, totalFare, totalDistance } = await getDetourTime(
+          start,
+          station,
+          end
+        ); // 전체 경유 시간
+        const detourTime = baseTime != null ? totalTime - baseTime : null; // 기본 경로 시간과의 차이
         return {
           statId: station.statId,
           lat: station.lat,
@@ -426,32 +493,129 @@ export default function RecommendRoute() {
           statNm: station.statNm,
           totalTime,
           detourTime,
+          totalFare,
+          totalDistance,
         };
       })
     );
 
-    // 5. 테스트: 우회시간 기준 정렬
+    // 5. 테스트: 우회시간 기준 정렬 Top 5 추출
     evaluatedStations.sort((a, b) => a.detourTime - b.detourTime);
-
-    // 6. Top 5 추출
     const topStations = evaluatedStations.slice(0, 5);
 
-    console.log(" 우회 top5개 충전소 목록:", topStations);
-
-    // 7. topstations들 실시간 충전소 사용가능 여부 확인
+    // 6. topstations들 실시간 충전소 사용가능 여부 확인
     const stationsWithStatus = await Promise.all(
       topStations.map(async (station) => {
-        const status = await getStationStatus(station.statId);
+        const status = await getStationStatus(
+          station.statId,
+          station.totalDistance
+        );
         return { ...station, ...status };
       })
     );
+    console.log("[1차] 최종5개 충전소 목록:", stationsWithStatus);
 
-    console.log("📍 충전소 추가 최종5개 충전소 목록:", stationsWithStatus);
+    // 7. 경유 충전소에서 최종목적지까지 도달 가능 여부 판단.
+    const finalStations = [];
 
-    // 8. 마커 표시
+    // 최종 충전소들 하나씩 돌면서 가능여부 판단
+    for (const station of stationsWithStatus) {
+      const chargedBattery = batteryInfo.chargeLimit;
+      const batteryAfterChargeKm =
+        (chargedBattery / 100) * batteryInfo.capacity * batteryInfo.efficiency;
+      const remainingKm = totalDistanceKm - station.totalDistance / 1000;
+
+      if (batteryAfterChargeKm >= remainingKm) {
+        finalStations.push({ ...station, secondHop: null });
+      } else {
+        const closestIdx = waypointsLatLng.reduce(
+          (bestIdx, wp, idx) => {
+            const dist = haversineDistance(
+              station.lat,
+              station.lng,
+              wp.lat,
+              wp.lng
+            );
+            return dist < bestIdx.dist ? { idx, dist } : bestIdx;
+          },
+          { idx: -1, dist: Infinity }
+        ).idx;
+
+        const remainingWaypoints =
+          closestIdx >= 0
+            ? waypointsLatLng.slice(closestIdx + 1)
+            : waypointsLatLng;
+
+        const subWaypoints = remainingWaypoints.filter((wp) => {
+          const distFromFirst = haversineDistance(
+            station.lat,
+            station.lng,
+            wp.lat,
+            wp.lng
+          );
+          return distFromFirst <= batteryAfterChargeKm;
+        });
+        const secondCandidates = await fetch(
+          "/api/station/getStationsNearWaypoints",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              waypoints: subWaypoints,
+              highway: hasHighway,
+              origin: { lat: station.lat, lng: station.lng },
+              dest: destCoords,
+              distance: remainingKm,
+              ...payload,
+            }),
+          }
+        ).then((r) => r.json());
+
+        const secondHop = secondCandidates?.[0] ?? null;
+
+        // 2차 충전소까지 도착 시간 및 충전 시간 계산 (기본값 null)
+        let secondHopTime = null;
+        let secondHopChargingTime = null;
+
+        if (secondHop) {
+          const { totalTime: hopTime } = await getDetourTime(
+            { lat: station.lat, lng: station.lng },
+            secondHop,
+            end
+          );
+          secondHopTime = hopTime ?? null;
+
+          const hopBatteryPercent = batteryInfo.chargeLimit; // 동일한 충전 한도 기준
+          const hopArrivalPercent = estimateArrivalBattery(
+            hopBatteryPercent,
+            (secondHop.distance ?? 0) / 1000,
+            batteryInfo.efficiency,
+            batteryInfo.capacity
+          );
+
+          const hopChargingTime = estimateChargingTime(
+            batteryInfo.capacity,
+            hopArrivalPercent,
+            batteryInfo.chargeLimit,
+            secondHop.output ?? 50
+          );
+
+          secondHopChargingTime = hopChargingTime;
+        }
+
+        finalStations.push({
+          ...station,
+          secondHop,
+          secondHopTime,
+          secondHopChargingTime,
+        });
+      }
+    }
+
+    // 8. ui 부분 마커 표시
     const defaultSize = new Tmapv2.Size(32, 32);
 
-    const newMarkers = stationsWithStatus.map((station) => {
+    const newMarkers = finalStations.map((station) => {
       const marker = new Tmapv2.Marker({
         position: new Tmapv2.LatLng(station.lat, station.lng),
         icon: "/img/logos/default.png",
@@ -464,13 +628,30 @@ export default function RecommendRoute() {
     });
     setStationMarkers(newMarkers);
 
-    // 9. 카드용 데이터로 변환
-    const cardData = stationsWithStatus.map((s) => ({
+    // 9. ui 부분 카드용 데이터로 변환
+    const cardData = finalStations.map((s) => ({
       name: s.statNm,
       totalTime: `${Math.round(s.totalTime / 60)}분`,
       detour: `${Math.round(s.detourTime / 60)}분`,
+      fare:
+        s.totalFare != null
+          ? `${s.totalFare.toLocaleString()}원`
+          : "요금 정보 없음",
+      distance:
+        s.totalDistance != null
+          ? `${(s.totalDistance / 1000).toFixed(1)}km`
+          : "거리 정보 없음",
       available: s.availableCount ?? null, // 서버에서 넘겨주는 필드명에 따라 수정
       total: s.totalCount ?? null, // "
+      arrivalPercent: s.arrivalPercent ?? null,
+      chargingTime: s.chargingTime != null ? `${s.chargingTime}분` : null,
+      secondHop: s.secondHop?.statNm ?? null,
+      secondHopTime:
+        s.secondHopTime != null
+          ? `${Math.round(s.secondHopTime / 60)}분`
+          : null,
+      secondHopChargingTime:
+        s.secondHopChargingTime != null ? `${s.secondHopChargingTime}분` : null,
     }));
 
     setStationCards(cardData); // 🔥 카드 리스트 세팅
@@ -502,28 +683,69 @@ export default function RecommendRoute() {
     );
 
     const json = await response.json();
-    return json.features?.[0]?.properties?.totalTime ?? null;
+
+    const props = json.features?.[0]?.properties;
+    if (!props) {
+      console.warn("❗ 경유지 경로 정보 없음:", station);
+      return { totalTime: null, totalFare: null, totalDistance: null };
+    }
+
+    return {
+      totalTime: props.totalTime ?? null,
+      totalFare: props.totalFare ?? null, // 요금 포함!
+      totalDistance: props.totalDistance ?? null, // 미터 단위
+    };
   };
 
   //프론트에서 충전소 상태 API 병렬 호출
-  const getStationStatus = async (statId) => {
+  const getStationStatus = async (statId, distanceToStation) => {
     const urlEncoded =
-      "Fd9vStrV5WKcvb5kTCXeBBw1zyOOxNrOysX80lQ02PLaIWqI7PFfY7PlcJopX%2F3kd5FYkiHYt6QYbhItGuhIhQ%3D%3D";
+      "Wq%2BLPbmdYSbixCNUPkPm%2B3vWdEP6EHCS%2Fx%2FUNPAejzZCAlbDERkA7NZG3aqfORfDOT9cc1Sa7KgaXrpIzaaNAQ%3D%3D";
 
     const urlStr = `http://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey=${urlEncoded}&numOfRows=9999&pageNo=1&statId=${statId}&dataType=JSON`;
     try {
       const res = await fetch(urlStr);
-      const json = await res.json();
+      if (!res.ok) {
+        console.warn(
+          `⚠️ 상태 가져오기 실패: ${station.statId} 응답코드: ${res.status}`
+        );
+        return {};
+      }
+      const data = await res.json();
 
-      const items = json?.items?.item || [];
+      const items = data?.items?.item || [];
 
       const totalCount = items.length;
       const availableCount = items.filter((c) => c.stat === "2").length;
+
+      // 🔧 전역 상태 활용
+      const batteryCapacity = batteryInfo.capacity;
+      const currentBattery = batteryInfo.level;
+      const efficiency = batteryInfo.efficiency;
+      const chargingSpeed = items[0]?.output ?? 50; // 없으면 50kW로 가정
+      const targetBattery = batteryInfo.chargeLimit;
+      // km → m → km 로 normalize
+      const distanceKm = distanceToStation / 1000;
+
+      const arrivalPercent = estimateArrivalBattery(
+        currentBattery,
+        distanceKm,
+        efficiency,
+        batteryCapacity
+      );
+      const chargingTime = estimateChargingTime(
+        batteryCapacity,
+        arrivalPercent,
+        targetBattery,
+        chargingSpeed
+      );
 
       return {
         availableCount,
         totalCount,
         chargers: items, // 👈 상세 충전기 정보들 전부 반환
+        arrivalPercent: arrivalPercent.toFixed(1),
+        chargingTime, // 분 단위
       };
     } catch (err) {
       console.error(`⚠️ 상태 가져오기 실패: ${statId}`, err);
@@ -534,11 +756,40 @@ export default function RecommendRoute() {
       };
     }
   };
-
   // 핸들러 예시
-  function handleBack() {}
-  function handleSwap() {}
+  function handleBack() {
+    navigate("/");
+  }
+
+  // 스왑 기능 구현
+  const handleSwap = () => {
+    // 입력값과 좌표 스왑
+    const tempInput = originInfo.input;
+    const tempCoords = originInfo.coords;
+
+    setOriginInfo({
+      input: destInfo.input,
+      coords: destInfo.coords,
+    });
+
+    setDestInfo({
+      input: tempInput,
+      coords: tempCoords,
+    });
+
+    // 경로 재계산
+    setTimeout(() => {
+      requestRoute();
+    }, 100); // 상태 업데이트 후 경로 재계산
+  };
+
   function handleAddWaypoint() {}
+
+  // 설정 적용 핸들러 추가
+  const handleApplySettings = () => {
+    setBatteryInfo(tempBatteryInfo); // 실제 상태 업데이트
+    setShowSettings(false);
+    requestRoute(); // 경로 재계산
 
 // 네비 연결
    const openTmapApp = () => {
@@ -563,6 +814,7 @@ setTimeout(() => {
 }, 1500);
 
     window.location.href = appURL;
+
   };
 
   return (
@@ -577,7 +829,7 @@ setTimeout(() => {
             <input
               className="route-input"
               type="text"
-              value={originInput || ""}
+              value={originInfo.input}
               placeholder="출발지 입력"
               readOnly
             />
@@ -590,7 +842,7 @@ setTimeout(() => {
             <input
               className="route-input"
               type="text"
-              value={destInput || ""}
+              value={destInfo.input}
               placeholder="도착지 입력"
               readOnly
             />
@@ -635,6 +887,67 @@ setTimeout(() => {
         </span>
       </button>
 
+      <button
+        onClick={() => {
+          if (mapRef.current) {
+            mapRef.current.setZoom(8); // 줌아웃하여 전체 경로 보기
+          }
+        }}
+        className="route-zoom-out-btn"
+        aria-label="전체 경로 보기"
+      >
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path
+            d="M9 4H4V9"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M4 9L10 3"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M19 4H24V9"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M24 9L18 3"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M19 24H24V19"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M24 19L18 25"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M9 24H4V19"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M4 19L10 25"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+
       {/* 설정 패널 바깥 클릭 시 닫히는 오버레이 */}
       {showSettings && (
         <div className="route-overlay" onClick={() => setShowSettings(false)} />
@@ -649,20 +962,27 @@ setTimeout(() => {
         >
           ←
         </button>
-        <h3>🔋 배터리 정보 입력</h3>
+        <h3>경로추천 옵션</h3>
 
         {/* 배터리 잔량 */}
         <div className="slider-group">
-          <label>배터리 잔량</label>
-          <div className="slider-value">{batteryInfo.level.toFixed(1)}%</div>
+          <div className="slider-header">
+            <label className="slider-label">배터리 잔량</label>
+            <div className="slider-value">
+              {tempBatteryInfo.level.toFixed(1)}%
+            </div>
+          </div>
           <input
             type="range"
             min={0}
             max={100}
             step={0.1}
-            value={batteryInfo.level}
+            value={tempBatteryInfo.level}
             onChange={(e) =>
-              setBatteryInfo({ ...batteryInfo, level: Number(e.target.value) })
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
+                level: Number(e.target.value),
+              })
             }
             className="custom-slider"
           />
@@ -670,19 +990,21 @@ setTimeout(() => {
 
         {/* 공인 전비 */}
         <div className="slider-group">
-          <label>공인 전비</label>
-          <div className="slider-value">
-            {batteryInfo.efficiency.toFixed(1)} km/kWh
+          <div className="slider-header">
+            <label className="slider-label">공인 전비</label>
+            <div className="slider-value">
+              {tempBatteryInfo.efficiency.toFixed(1)} km/kWh
+            </div>
           </div>
           <input
             type="range"
             min={3}
             max={10}
             step={0.1}
-            value={batteryInfo.efficiency}
+            value={tempBatteryInfo.efficiency}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 efficiency: Number(e.target.value),
               })
             }
@@ -692,19 +1014,21 @@ setTimeout(() => {
 
         {/* 선호 충전 한도 */}
         <div className="slider-group">
-          <label>선호 충전 한도</label>
-          <div className="slider-value">
-            {batteryInfo.chargeLimit?.toFixed(1) ?? 85}%
+          <div className="slider-header">
+            <label className="slider-label">선호 충전 한도</label>
+            <div className="slider-value">
+              {tempBatteryInfo.chargeLimit?.toFixed(1) ?? 85}%
+            </div>
           </div>
           <input
             type="range"
             min={60}
             max={100}
             step={0.1}
-            value={batteryInfo.chargeLimit ?? 85}
+            value={tempBatteryInfo.chargeLimit ?? 85}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 chargeLimit: Number(e.target.value),
               })
             }
@@ -714,19 +1038,21 @@ setTimeout(() => {
 
         {/* 희망 목적지 배터리 잔량 */}
         <div className="slider-group">
-          <label>희망 목적지 배터리 잔량</label>
-          <div className="slider-value">
-            {batteryInfo.targetLevel?.toFixed(1) ?? 50}%
+          <div className="slider-header">
+            <label className="slider-label">희망 목적지 배터리 잔량</label>
+            <div className="slider-value">
+              {tempBatteryInfo.targetLevel?.toFixed(1) ?? 50}%
+            </div>
           </div>
           <input
             type="range"
             min={10}
             max={80}
             step={0.1}
-            value={batteryInfo.targetLevel ?? 50}
+            value={tempBatteryInfo.targetLevel ?? 50}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 targetLevel: Number(e.target.value),
               })
             }
@@ -736,17 +1062,19 @@ setTimeout(() => {
 
         {/* 배터리 용량 */}
         <div className="slider-group">
-          <label>배터리 용량</label>
-          <div className="slider-value">{batteryInfo.capacity} kWh</div>
+          <div className="slider-header">
+            <label className="slider-label">배터리 용량</label>
+            <div className="slider-value">{tempBatteryInfo.capacity} kWh</div>
+          </div>
           <input
             type="range"
             min={20}
             max={120}
             step={1}
-            value={batteryInfo.capacity}
+            value={tempBatteryInfo.capacity}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 capacity: Number(e.target.value),
               })
             }
@@ -756,17 +1084,19 @@ setTimeout(() => {
 
         {/* 외부 온도 */}
         <div className="slider-group">
-          <label>외부 온도</label>
-          <div className="slider-value">{batteryInfo.temperature}℃</div>
+          <div className="slider-header">
+            <label className="slider-label">외부 온도</label>
+            <div className="slider-value">{tempBatteryInfo.temperature}℃</div>
+          </div>
           <input
             type="range"
             min={-20}
             max={50}
             step={1}
-            value={batteryInfo.temperature}
+            value={tempBatteryInfo.temperature}
             onChange={(e) =>
-              setBatteryInfo({
-                ...batteryInfo,
+              setTempBatteryInfo({
+                ...tempBatteryInfo,
                 temperature: Number(e.target.value),
               })
             }
@@ -803,10 +1133,7 @@ setTimeout(() => {
         </div>
 
         {/* 설정 적용하기 버튼 */}
-        <button
-          className="apply-settings-btn"
-          onClick={() => setShowSettings(false)}
-        >
+        <button className="apply-settings-btn" onClick={handleApplySettings}>
           설정 적용하기
         </button>
       </div>
@@ -837,12 +1164,25 @@ setTimeout(() => {
               <div className="station-card-info">
                 <span>총 소요 시간: {card.totalTime}</span>
                 <span>우회 시간: {card.detour}</span>
+                <span>{card.distance}</span>
+                <span>{card.fare}</span>
+                <span>
+                  충전 예상시간: {card.chargingTime} / 충전 후:
+                  {card.arrivalPercent}
+                </span>
               </div>
               <div className="station-card-charger">
                 {card.total === null
                   ? "🔌 충전기 정보 없음"
                   : `🔌 사용가능 ${card.available} / ${card.total}`}
               </div>
+              {card.secondHop && (
+                <div className="sub-card">
+                  <p>2차 충전소: {card.secondHop}</p>
+                  <p>도착까지: {card.secondHopTime}</p>
+                  <p>충전시간: {card.secondHopChargingTime}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
