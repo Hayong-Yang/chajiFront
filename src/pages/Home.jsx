@@ -307,12 +307,12 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 
   return (
     <div className="autocomplete-wrapper" ref={wrapperRef}>
-      <label className="autocomplete-label">{label}</label>
+      <label className="autocomplete-label"></label>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={`${label} 입력`}
+        placeholder={`차지차지! 장소를 검색해보세요!`}
         autoComplete="off"
         onFocus={() => {
           if (suggestions.length > 0) setShowList(true);
@@ -379,9 +379,29 @@ export default function Home() {
 
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  // 드롭다운 버튼 토글 함수 개선 (같은 버튼 누르면 닫힘)
   const toggleDropdown = (menu) => {
     setActiveDropdown((prev) => (prev === menu ? null : menu));
   };
+
+  // 드롭다운 외부 클릭/터치 시 닫기
+  useEffect(() => {
+    if (!activeDropdown) return;
+    function handleClickOutside(e) {
+      // 드롭다운 영역 내 클릭이면 무시
+      const dropdowns = document.querySelectorAll(".dropdown");
+      for (let i = 0; i < dropdowns.length; i++) {
+        if (dropdowns[i].contains(e.target)) return;
+      }
+      setActiveDropdown(null);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [activeDropdown]);
 
   const [filterOptions, setFilterOptions] = useState({
     freeParking: false,
@@ -550,6 +570,19 @@ export default function Home() {
       if (checked) setCodes.add(value);
       else setCodes.delete(value);
       const next = { ...prev, type: Array.from(setCodes) };
+      applyFiltersInline(next);
+      return next;
+    });
+  };
+
+  // 사업자 체크박스 선택 시 필터 즉시 적용
+  const handleInlineProviderChange = (e) => {
+    const { checked, value } = e.target;
+    setFilterOptions((prev) => {
+      const setCodes = new Set(prev.provider);
+      if (checked) setCodes.add(value);
+      else setCodes.delete(value);
+      const next = { ...prev, provider: Array.from(setCodes) };
       applyFiltersInline(next);
       return next;
     });
@@ -986,77 +1019,179 @@ export default function Home() {
     });
   };
 
+  useEffect(() => {
+    console.log("activeDropdown 상태 변경됨:", activeDropdown);
+  }, [activeDropdown]);
+
+  const [roamingSearch, setRoamingSearch] = useState("");
+
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
       {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
-      <div className="search-fixed-container">
+      <div
+        className="search-fixed-container"
+        style={{
+          zIndex: 1100,
+          background: "transparent",
+          padding: 0,
+          margin: 0,
+          width: "100%",
+        }}
+      >
         {mode === "search" ? (
-          <AutocompleteInput
-            label="검색"
-            value={searchInput}
-            onChange={setSearchInput}
-            onSelect={(item) => {
-              handleSearchSelect(item, "search");
-              // 검색창 자체는 유지(여기선 출발/도착으로 안 바꿈)
-            }}
-          />
-        ) : (
-          <>
-            <AutocompleteInput
-              label="출발지"
-              value={originInput}
-              onChange={setOriginInput}
-              onSelect={(item) => handleSearchSelect(item, "origin")}
-              // ***자동완성 없이 그냥 남겨두고, 패널 버튼으로 확정***
-            />
-            <button className="swap-button" onClick={handleSwap}>
-              🔄
-            </button>
-            <AutocompleteInput
-              label="도착지"
-              value={destInput}
-              onChange={setDestInput}
-              onSelect={(item) => handleSearchSelect(item, "dest")}
-            />
-            <button className="recommend-button" onClick={handleRecommendClick}>
-              경로 추천
-            </button>
-          </>
-        )}
-
-        <div style={{ position: "absolute", top: 80, left: 10, zIndex: 1000 }}>
-          <label
-            htmlFor="memberCompany"
-            style={{ fontWeight: "bold", color: "#333" }}
-          >
-            로밍 요금 기준 회원사
-          </label>
-          <select
-            id="memberCompany"
-            value={memberCompany || ""}
-            onChange={(e) =>
-              setMemberCompany(e.target.value !== "" ? e.target.value : null)
-            }
+          <div
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: "white",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
               padding: "8px 12px",
-              fontSize: "14px",
-              borderRadius: "8px",
-              marginLeft: "10px",
+              border: "none",
+              width: "100%",
+              margin: 0,
+              borderRadius: 0,
             }}
           >
-            <option value="">-- 회원사 선택 --</option>
-            {providerOptions.map((opt) => (
-              <option key={opt.code} value={opt.code}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            <button
+              className="hamburger-button"
+              onClick={() => setShowDrawer(true)}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 26,
+                color: "#1976d2",
+                cursor: "pointer",
+                marginRight: 6,
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+              }}
+              aria-label="메뉴 열기"
+            >
+              ☰
+            </button>
+            <AutocompleteInput
+              label=""
+              value={searchInput}
+              onChange={setSearchInput}
+              onSelect={(item) => {
+                handleSearchSelect(item, "search");
+              }}
+              inputStyle={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: 16,
+                color: "#1976d2",
+                width: "100%",
+                padding: 0,
+                fontWeight: 500,
+              }}
+              placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+            />
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              background: "white",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              padding: "12px 12px 8px 12px",
+              border: "none",
+              width: "100%",
+              margin: 0,
+              borderRadius: 0,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <AutocompleteInput
+                label="출발지"
+                value={originInput}
+                onChange={setOriginInput}
+                onSelect={(item) => handleSearchSelect(item, "origin")}
+                inputStyle={{
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  fontSize: 16,
+                  color: "#1976d2",
+                  width: "100%",
+                  padding: 0,
+                  fontWeight: 500,
+                }}
+                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+              />
+              <button
+                className="swap-button"
+                onClick={handleSwap}
+                style={{
+                  background: "#1976d2",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  marginLeft: 2,
+                  cursor: "pointer",
+                }}
+                title="출발/도착 스왑"
+              >
+                ↕
+              </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <AutocompleteInput
+                label="도착지"
+                value={destInput}
+                onChange={setDestInput}
+                onSelect={(item) => handleSearchSelect(item, "dest")}
+                inputStyle={{
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  fontSize: 16,
+                  color: "#1976d2",
+                  width: "100%",
+                  padding: 0,
+                  fontWeight: 500,
+                }}
+                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+              />
+              <button
+                className="add-dest-button"
+                onClick={handleRecommendClick}
+                style={{
+                  background: "#1976d2",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  marginLeft: 2,
+                  cursor: "pointer",
+                }}
+                title="경로 추천"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 필터 아이콘 및 창 */}
-
+      {/* 필터 바 */}
       <div className="home-container">
         {/* 🔹 2. 햄버거 버튼 추가 */}
         <button
@@ -1066,11 +1201,7 @@ export default function Home() {
           ☰
         </button>
         {/* 리스트보기 버튼 */}
-        <button
-          className="seal-button"
-          onClick={handleShowList}
-          style={{ position: "absolute", top: 10, right: 10, zIndex: 999 }}
-        >
+        <button className="seal-button" onClick={handleShowList}>
           <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
           {showList ? "닫기" : "리스트 보기"}
         </button>
@@ -1084,267 +1215,505 @@ export default function Home() {
             >
               <FontAwesomeIcon icon={faSliders} />
             </button>
-
-            {activeDropdown === "filter" && (
-              <div className="filter-panel">
-                <h4>충전소 필터</h4>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="freeParking"
-                    checked={filterOptions.freeParking}
-                    onChange={handleFilterChange}
-                  />
-                  무료 주차만 보기
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="noLimit"
-                    checked={filterOptions.noLimit}
-                    onChange={handleFilterChange}
-                  />
-                  이용제한 없는 곳만 보기
-                </label>
-
-                {/* === 충전 속도 '이상/이하' 셀렉트 === */}
-                <div
-                  style={{ margin: "10px 0 0", fontWeight: 600, fontSize: 16 }}
-                >
-                  충전속도
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    margin: "10px 0 0",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <select
-                    name="outputMin"
-                    value={filterOptions.outputMin}
-                    onChange={handleOutputSelect}
-                    style={{
-                      padding: "7px 12px",
-                      borderRadius: 8,
-                      fontSize: 16,
-                      marginRight: 2,
-                      minWidth: 70,
-                    }}
-                  >
-                    {outputOptions.map((v) => (
-                      <option key={v} value={v}>
-                        {v === 0 ? "완속" : `${v}kW`}
-                      </option>
-                    ))}
-                  </select>
-                  <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
-                  <select
-                    name="outputMax"
-                    value={filterOptions.outputMax}
-                    onChange={handleOutputSelect}
-                    style={{
-                      padding: "7px 12px",
-                      borderRadius: 8,
-                      fontSize: 16,
-                      marginLeft: 8,
-                      minWidth: 70,
-                    }}
-                  >
-                    {outputOptions.map((v) => (
-                      <option key={v} value={v}>
-                        {v === 0 ? "완속" : `${v}kW`}
-                      </option>
-                    ))}
-                  </select>
-                  <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginTop: 7,
-                    marginBottom: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "#31ba81",
-                      background: "#ecfaf3",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      padding: "4px 10px",
-                      borderRadius: 12,
-                      display: "inline-block",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {outputText}
-                  </span>
-                </div>
-
-                <fieldset>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 8, // 항목과 버튼 간 간격
-                    }}
-                  >
-                    <legend>충전기 타입:</legend>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={
-                          filterOptions.type.length ===
-                          chargerTypeOptions.length
-                        }
-                        onChange={(e) =>
-                          setFilterOptions((prev) => ({
-                            ...prev,
-                            type: e.target.checked
-                              ? chargerTypeOptions.map((opt) => opt.code)
-                              : [],
-                          }))
-                        }
-                      />
-                      <span className="slider round"></span>
-                    </label>
-                  </div>
-
-                  {chargerTypeOptions.map((option) => (
-                    <label
-                      key={option.code}
-                      style={{ display: "block", marginBottom: 4 }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="type"
-                        value={option.code}
-                        checked={filterOptions.type.includes(option.code)}
-                        onChange={handleFilterChange}
-                      />
-                      {" " + option.label}
-                    </label>
-                  ))}
-                </fieldset>
-
-                {/* 사업자 필터 섹션 */}
-                <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: 16 }}>
-                      사업자
-                    </span>
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        checked={
-                          filterOptions.provider.length ===
-                          providerOptions.length
-                        }
-                        onChange={(e) =>
-                          setFilterOptions((prev) => ({
-                            ...prev,
-                            provider: e.target.checked
-                              ? providerOptions.map((opt) => opt.code)
-                              : [],
-                          }))
-                        }
-                      />
-                      <span className="slider round"></span>
-                    </label>
-                  </div>
-                  <div
-                    style={{
-                      maxHeight: "200px",
-                      overflowY: "auto",
-                      padding: "8px",
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      marginTop: 4,
-                    }}
-                  >
-                    {providerOptions.map((opt) => (
-                      <label
-                        key={opt.code}
-                        style={{ display: "block", marginBottom: 4 }}
-                      >
-                        <input
-                          type="checkbox"
-                          name="provider"
-                          value={opt.code}
-                          checked={filterOptions.provider.includes(opt.code)}
-                          onChange={handleFilterChange}
-                        />
-                        {" " + opt.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <button onClick={applyFilters}>필터 적용</button>
-              </div>
-            )}
-          </div>{" "}
+          </div>
           <button onClick={() => toggleDropdown("speed")}>충전속도 ▾</button>
-          {activeDropdown === "speed" && (
-            <div className="dropdown speed-dropdown">
-              <select
-                name="outputMin"
-                value={filterOptions.outputMin}
-                onChange={handleSpeedChange}
-              >
-                {" "}
-                {outputOptions.map((v) => (
-                  <option key={v} value={v}>
-                    {v === 0 ? "완속" : `${v}kW`}
-                  </option>
-                ))}
-              </select>
-              <span style={{ margin: "0 8px" }}>~</span>
-              <select
-                name="outputMax"
-                value={filterOptions.outputMax}
-                onChange={handleSpeedChange}
-              >
-                {" "}
-                {outputOptions.map((v) => (
-                  <option key={v} value={v}>
-                    {v === 0 ? "완속" : `${v}kW`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           <button onClick={() => toggleDropdown("type")}>충전타입 ▾</button>
-          {activeDropdown === "type" && (
-            <div className="dropdown type-dropdown">
-              {chargerTypeOptions.map((opt) => (
+          <button
+            onClick={() => {
+              toggleDropdown("provider");
+            }}
+          >
+            충전사업자:{" "}
+            {filterOptions.provider.length === providerOptions.length
+              ? "전체"
+              : filterOptions.provider.length === 0
+              ? "선택안함"
+              : `${filterOptions.provider.length}개`}{" "}
+            ▾
+          </button>
+          <button onClick={() => toggleDropdown("memberCompany")}>
+            로밍:{" "}
+            {memberCompany
+              ? providerOptions.find((opt) => opt.code === memberCompany)
+                  ?.label || memberCompany
+              : "선택안함"}{" "}
+            ▾
+          </button>
+        </div>
+
+        {/* 왼쪽에서 스르륵 나타나는 필터 패널 */}
+        <motion.div
+          className="filter-panel"
+          initial={{ x: -400 }}
+          animate={{ x: activeDropdown === "filter" ? 0 : -400 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            height: "100vh",
+            width: "70vw", // 화면 가로의 70%
+            maxWidth: "400px", // 최대 너비 제한
+            background: "white",
+            boxShadow: "2px 0 10px rgba(0,0,0,0.1)",
+            zIndex: 3000,
+            overflowY: "auto",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}
+          >
+            <h4 style={{ margin: 0 }}>충전소 필터</h4>
+            <button
+              onClick={() => setActiveDropdown(null)}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <label>
+            <input
+              type="checkbox"
+              name="freeParking"
+              checked={filterOptions.freeParking}
+              onChange={handleFilterChange}
+            />
+            무료 주차만 보기
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="noLimit"
+              checked={filterOptions.noLimit}
+              onChange={handleFilterChange}
+            />
+            이용제한 없는 곳만 보기
+          </label>
+
+          {/* === 충전 속도 '이상/이하' 셀렉트 === */}
+          <div style={{ margin: "20px 0 0", fontWeight: 600, fontSize: 16 }}>
+            충전속도
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              margin: "10px 0 0",
+              flexWrap: "wrap",
+            }}
+          >
+            <select
+              name="outputMin"
+              value={filterOptions.outputMin}
+              onChange={handleOutputSelect}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 8,
+                fontSize: 16,
+                marginRight: 2,
+                minWidth: 70,
+              }}
+            >
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: 15, fontWeight: 500 }}>이상</span>
+            <select
+              name="outputMax"
+              value={filterOptions.outputMax}
+              onChange={handleOutputSelect}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 8,
+                fontSize: 16,
+                marginLeft: 8,
+                minWidth: 70,
+              }}
+            >
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: 15, fontWeight: 500 }}>이하</span>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              textAlign: "center",
+              marginTop: 7,
+              marginBottom: 10,
+            }}
+          >
+            <span
+              style={{
+                color: "#31ba81",
+                background: "#ecfaf3",
+                fontWeight: 600,
+                fontSize: 14,
+                padding: "4px 10px",
+                borderRadius: 12,
+                display: "inline-block",
+                letterSpacing: 0.5,
+              }}
+            >
+              {outputText}
+            </span>
+          </div>
+
+          <fieldset>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <legend>충전기 타입:</legend>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={
+                    filterOptions.type.length === chargerTypeOptions.length
+                  }
+                  onChange={(e) =>
+                    setFilterOptions((prev) => ({
+                      ...prev,
+                      type: e.target.checked
+                        ? chargerTypeOptions.map((opt) => opt.code)
+                        : [],
+                    }))
+                  }
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+
+            {chargerTypeOptions.map((option) => (
+              <label
+                key={option.code}
+                style={{ display: "block", marginBottom: 4 }}
+              >
+                <input
+                  type="checkbox"
+                  name="type"
+                  value={option.code}
+                  checked={filterOptions.type.includes(option.code)}
+                  onChange={handleInlineTypeChange}
+                />
+                {" " + option.label}
+              </label>
+            ))}
+          </fieldset>
+
+          {/* 사업자 필터 섹션 */}
+          <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 16 }}>사업자</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={
+                    filterOptions.provider.length === providerOptions.length
+                  }
+                  onChange={(e) =>
+                    setFilterOptions((prev) => ({
+                      ...prev,
+                      provider: e.target.checked
+                        ? providerOptions.map((opt) => opt.code)
+                        : [],
+                    }))
+                  }
+                />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div
+              style={{
+                maxHeight: "200px",
+                overflowY: "auto",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                marginTop: 4,
+              }}
+            >
+              {providerOptions.map((opt) => (
                 <label
                   key={opt.code}
                   style={{ display: "block", marginBottom: 4 }}
                 >
                   <input
                     type="checkbox"
+                    name="provider"
                     value={opt.code}
-                    checked={filterOptions.type.includes(opt.code)}
-                    onChange={handleInlineTypeChange}
-                  />{" "}
-                  {opt.label}
+                    checked={filterOptions.provider.includes(opt.code)}
+                    onChange={handleInlineProviderChange}
+                  />
+                  {" " + opt.label}
                 </label>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+
+          <button
+            onClick={applyFilters}
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginTop: "20px",
+              background: "#31ba81",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              cursor: "pointer",
+            }}
+          >
+            필터 적용
+          </button>
+        </motion.div>
+
+        {/* 필터 패널 바깥 영역 클릭 시 닫기 */}
+        {activeDropdown === "filter" && (
+          <div
+            onClick={() => setActiveDropdown(null)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.3)",
+              zIndex: 1000,
+              cursor: "pointer",
+            }}
+          />
+        )}
+
+        {/* 지도 위에 표시될 드롭다운들 (speed/type/provider/memberCompany 모두 같은 레벨) */}
+        {activeDropdown === "speed" && (
+          <div
+            className="dropdown speed-dropdown"
+            style={{
+              position: "absolute",
+              top: "110px",
+              left: 0,
+              width: "100vw",
+              maxWidth: "100vw",
+              zIndex: 1500,
+              background: "rgba(25,118,210,0.95)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "16px",
+              padding: "18px 12px",
+              boxShadow: "0 4px 24px rgba(25,118,210,0.18)",
+              minWidth: 0,
+            }}
+          >
+            <select
+              name="outputMin"
+              value={filterOptions.outputMin}
+              onChange={handleSpeedChange}
+              style={{
+                color: "#222",
+                borderRadius: 8,
+                padding: 8,
+                fontSize: 16,
+              }}
+            >
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+            <span style={{ margin: "0 8px", color: "#fff" }}>~</span>
+            <select
+              name="outputMax"
+              value={filterOptions.outputMax}
+              onChange={handleSpeedChange}
+              style={{
+                color: "#222",
+                borderRadius: 8,
+                padding: 8,
+                fontSize: 16,
+              }}
+            >
+              {outputOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v === 0 ? "완속" : `${v}kW`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {activeDropdown === "type" && (
+          <div
+            className="dropdown type-dropdown"
+            style={{
+              position: "absolute",
+              top: "110px",
+              left: 0,
+              width: "100vw",
+              maxWidth: "100vw",
+              zIndex: 1500,
+              background: "rgba(25,118,210,0.95)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "16px",
+              padding: "18px 12px",
+              boxShadow: "0 4px 24px rgba(25,118,210,0.18)",
+              minWidth: 0,
+            }}
+          >
+            {chargerTypeOptions.map((opt) => (
+              <label
+                key={opt.code}
+                style={{ display: "block", marginBottom: 4, color: "#fff" }}
+              >
+                <input
+                  type="checkbox"
+                  value={opt.code}
+                  checked={filterOptions.type.includes(opt.code)}
+                  onChange={handleInlineTypeChange}
+                  style={{ marginRight: 6 }}
+                />{" "}
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        )}
+        {activeDropdown === "provider" && (
+          <div
+            className="dropdown provider-dropdown"
+            style={{
+              position: "absolute",
+              top: "110px",
+              left: 0,
+              width: "100vw",
+              maxWidth: "100vw",
+              zIndex: 1500,
+              background: "rgba(25,118,210,0.95)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "16px",
+              padding: "18px 12px",
+              boxShadow: "0 4px 24px rgba(25,118,210,0.18)",
+              maxHeight: "340px",
+              overflowY: "auto",
+              minWidth: 0,
+            }}
+          >
+            {providerOptions.map((opt) => (
+              <label
+                key={opt.code}
+                style={{ display: "block", marginBottom: 4, color: "#fff" }}
+              >
+                <input
+                  type="checkbox"
+                  name="provider"
+                  value={opt.code}
+                  checked={filterOptions.provider.includes(opt.code)}
+                  onChange={handleInlineProviderChange}
+                  style={{ marginRight: 6 }}
+                />{" "}
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        )}
+        {activeDropdown === "memberCompany" && (
+          <div
+            className="dropdown member-company-dropdown"
+            style={{
+              position: "absolute",
+              top: "110px",
+              left: 0,
+              width: "100vw",
+              maxWidth: "100vw",
+              zIndex: 1500,
+              background: "rgba(25,118,210,0.95)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "16px",
+              padding: "18px 12px",
+              boxShadow: "0 4px 24px rgba(25,118,210,0.18)",
+              minWidth: 0,
+            }}
+          >
+            {/* 검색 입력란 */}
+            <input
+              type="text"
+              value={roamingSearch}
+              onChange={(e) => setRoamingSearch(e.target.value)}
+              placeholder="로밍사 검색"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                fontSize: "15px",
+                borderRadius: "8px",
+                border: "none",
+                marginBottom: 10,
+                color: "#222",
+              }}
+            />
+            <select
+              value={memberCompany || ""}
+              onChange={(e) => {
+                setMemberCompany(e.target.value !== "" ? e.target.value : null);
+                setActiveDropdown(null);
+                setRoamingSearch("");
+              }}
+              style={{
+                padding: "8px 12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                width: "100%",
+                color: "#222",
+              }}
+            >
+              {providerOptions
+                .filter(
+                  (opt) =>
+                    !roamingSearch.trim() ||
+                    opt.label
+                      .toLowerCase()
+                      .includes(roamingSearch.trim().toLowerCase())
+                )
+                .map((opt) => (
+                  <option key={opt.code} value={opt.code}>
+                    {opt.label}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
         {/* <h2>전기차 충전소 홈 </h2> */}
         <div id="map_div" ref={mapRef} className="map-container"></div>
         <motion.div
@@ -1364,7 +1733,13 @@ export default function Home() {
             height: selectedStation ? (isPanelExpanded ? "90vh" : "30vh") : "0",
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          style={{ overflowY: "auto" }}
+          style={{
+            overflowY: "auto",
+            zIndex: 2000,
+            position: "fixed",
+            left: 0,
+            right: 0,
+          }}
         >
           <div
             className="drag-handle"
@@ -1522,22 +1897,7 @@ export default function Home() {
           )}
         </motion.div>
         {showList && (
-          <div
-            className="station-list-container"
-            style={{
-              position: "absolute",
-              top: 60,
-              right: 10,
-              width: 300,
-              maxHeight: "70vh",
-              overflowY: "auto",
-              background: "#fff",
-              padding: "12px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              zIndex: 999,
-            }}
-          >
+          <div className="station-list-container">
             <div
               style={{
                 display: "flex",
@@ -1555,9 +1915,7 @@ export default function Home() {
                   cursor: "pointer",
                 }}
                 title="닫기"
-              >
-                ❌
-              </button>
+              ></button>
             </div>
             <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
               {stations.map((st, idx) => (
@@ -1581,66 +1939,86 @@ export default function Home() {
         )}
         {/* 3. 사이드 드로어 */}
         {showDrawer && (
-          <div className="side-drawer" ref={drawerRef}>
-            {/* 상단: 프로필 + 로그인 */}
-            <div className="drawer-top-row">
-              <img
-                src="/img/profile-default.png"
-                alt="프로필"
-                className="profile-image"
-              />
-              <div className="login-links">회원가입 | 로그인</div>
-            </div>
-            <div className="drawer-welcome">
-              차지차지와 함께 행복한 하루 보내세요!
-            </div>
-
-            {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
-            <div className="drawer-body">
-              <div className="icon-column">
-                <div onClick={() => setActiveMenu("mypage")}>
-                  <img src="/img/icon-profile.png" alt="마이페이지" />
-                </div>
-                <div onClick={() => setActiveMenu("community")}>
-                  <img src="/img/icon-community.png" alt="커뮤니티" />
-                </div>
-                <div onClick={() => setActiveMenu("support")}>
-                  <img src="/img/icon-support.png" alt="고객센터" />
-                </div>
-                <div onClick={() => setActiveMenu("settings")}>
-                  <img src="/img/icon-settings.png" alt="설정" />
-                </div>
+          <>
+            {/* 오버레이 */}
+            <div
+              onClick={() => setShowDrawer(false)}
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.2)",
+                zIndex: 1200,
+                cursor: "pointer",
+              }}
+            />
+            <div
+              className="side-drawer"
+              ref={drawerRef}
+              style={{ zIndex: 1201 }}
+            >
+              {/* 상단: 프로필 + 로그인 */}
+              <div className="drawer-top-row">
+                <img
+                  src="/img/profile-default.png"
+                  alt="프로필"
+                  className="profile-image"
+                />
+                <div className="login-links">회원가입 | 로그인</div>
+              </div>
+              <div className="drawer-welcome">
+                차지차지와 함께 행복한 하루 보내세요!
               </div>
 
-              <div className="text-column">
-                {activeMenu === "mypage" && (
-                  <div className="text-list">
-                    <div className="text-item">내 활동</div>
-                    <div className="text-item">내가 쓴 글 보기</div>
-                    <div className="text-item">충전소 제보 내역</div>
+              {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
+              <div className="drawer-body">
+                <div className="icon-column">
+                  <div onClick={() => setActiveMenu("mypage")}>
+                    <img src="/img/icon-profile.png" alt="마이페이지" />
                   </div>
-                )}
-                {activeMenu === "community" && (
-                  <div className="text-list">
-                    <div className="text-item">자유게시판</div>
-                    <div className="text-item">정보공유</div>
+                  <div onClick={() => setActiveMenu("community")}>
+                    <img src="/img/icon-community.png" alt="커뮤니티" />
                   </div>
-                )}
-                {activeMenu === "support" && (
-                  <div className="text-list">
-                    <div className="text-item">문의하기</div>
-                    <div className="text-item">자주 묻는 질문</div>
+                  <div onClick={() => setActiveMenu("support")}>
+                    <img src="/img/icon-support.png" alt="고객센터" />
                   </div>
-                )}
-                {activeMenu === "settings" && (
-                  <div className="text-list">
-                    <div className="text-item">알림 설정</div>
-                    <div className="text-item">계정 설정</div>
+                  <div onClick={() => setActiveMenu("settings")}>
+                    <img src="/img/icon-settings.png" alt="설정" />
                   </div>
-                )}
+                </div>
+
+                <div className="text-column">
+                  {activeMenu === "mypage" && (
+                    <div className="text-list">
+                      <div className="text-item">내 활동</div>
+                      <div className="text-item">내가 쓴 글 보기</div>
+                      <div className="text-item">충전소 제보 내역</div>
+                    </div>
+                  )}
+                  {activeMenu === "community" && (
+                    <div className="text-list">
+                      <div className="text-item">자유게시판</div>
+                      <div className="text-item">정보공유</div>
+                    </div>
+                  )}
+                  {activeMenu === "support" && (
+                    <div className="text-list">
+                      <div className="text-item">문의하기</div>
+                      <div className="text-item">자주 묻는 질문</div>
+                    </div>
+                  )}
+                  {activeMenu === "settings" && (
+                    <div className="text-list">
+                      <div className="text-item">알림 설정</div>
+                      <div className="text-item">계정 설정</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
         <button
           className="current-location-button"
@@ -1649,6 +2027,90 @@ export default function Home() {
         >
           <FontAwesomeIcon icon={faLocationArrow} />
         </button>
+      </div>
+
+      {/* 하단 고정 바: 커뮤니티, 즐겨찾기, 경로추천 */}
+      <div
+        style={{
+          position: "fixed",
+          left: 0,
+          bottom: 0,
+          width: "100%",
+          zIndex: 1200,
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none", // 하위 버튼만 클릭 가능하게
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            borderRadius: "18px 18px 0 0",
+            boxShadow: "0 -2px 16px rgba(0,0,0,0.12)",
+            display: "flex",
+            gap: "36px",
+            padding: "16px 32px 20px 32px",
+            margin: "0 12px 8px 12px",
+            minWidth: 320,
+            maxWidth: 480,
+            width: "100%",
+            justifyContent: "space-around",
+            pointerEvents: "auto",
+          }}
+        >
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 15,
+              color: "#222",
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveMenu("community")}
+          >
+            <span style={{ fontSize: 22, marginBottom: 2 }}>💬</span>
+            커뮤니티
+          </button>
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 15,
+              color: "#222",
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveMenu("favorite")}
+          >
+            <span style={{ fontSize: 22, marginBottom: 2 }}>⭐</span>
+            즐겨찾기
+          </button>
+          <button
+            style={{
+              background: "#31ba81",
+              border: "none",
+              borderRadius: 12,
+              color: "white",
+              fontWeight: 600,
+              fontSize: 15,
+              padding: "8px 18px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              boxShadow: "0 2px 8px rgba(49,186,129,0.12)",
+              cursor: "pointer",
+            }}
+            onClick={handleRecommendClick}
+          >
+            <span style={{ fontSize: 22, marginBottom: 2 }}>🚗</span>
+            경로추천
+          </button>
+        </div>
       </div>
     </div>
   );
