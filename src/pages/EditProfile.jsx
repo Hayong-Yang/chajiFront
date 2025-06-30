@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getUserInfo, updateUser, logoutUser } from "../api/member";
+import { FaArrowLeft } from "react-icons/fa";
+import "./EditProfile.css";
 
 export default function EditProfile() {
   const [user, setUser] = useState(null);
@@ -39,28 +41,44 @@ export default function EditProfile() {
   };
 
   return (
-    <div>
+    <div className="edit-container">
+      <div className="top-link">
+        <Link to="/mypage" className="home-link">
+          <FaArrowLeft className="home-icon" />
+        </Link>
+      </div>
+
       <h2>회원정보 수정</h2>
-      <p>아이디: {user.userId}</p>
-      <p>
-        비밀번호:{" "}
+
+      <div className="info-box">
+        <p>
+          <strong>아이디:</strong> {user.userId}
+        </p>
+      </div>
+
+      <div className="input-box">
+        <label>비밀번호</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="새 비밀번호"
         />
-      </p>
-      <p>
-        이름:{" "}
+      </div>
+
+      <div className="input-box">
+        <label>이름</label>
         <input value={userName} onChange={(e) => setUserName(e.target.value)} />
-      </p>
-      <button onClick={handleUpdate}>수정하기</button>
-      <button onClick={handleLogout}>로그아웃</button>
-      <p>{message}</p>
-      <p>
-        <Link to="/mypage">마이페이지</Link>
-      </p>
+      </div>
+
+      <button className="btn primary" onClick={handleUpdate}>
+        수정하기
+      </button>
+      <button className="btn secondary" onClick={handleLogout}>
+        로그아웃
+      </button>
+
+      {message && <p className="message">{message}</p>}
     </div>
   );
 }
