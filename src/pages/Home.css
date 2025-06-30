@@ -702,6 +702,7 @@ input:checked + .slider:before {
 .current-location-button:hover {
   background-color: #ecfaf3;
   transform: scale(1.08);
+
 }
 
 html,
@@ -830,3 +831,4 @@ body,
   margin-bottom: 2px;
   color: #222;
 }
+

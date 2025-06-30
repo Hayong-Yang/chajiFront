@@ -790,6 +790,31 @@ export default function RecommendRoute() {
     setBatteryInfo(tempBatteryInfo); // 실제 상태 업데이트
     setShowSettings(false);
     requestRoute(); // 경로 재계산
+
+// 네비 연결
+   const openTmapApp = () => {
+    const viaParams = (waypointsLatLng || []) 
+      .map((v, i) => {
+        const name = v.name ?? `WP${i + 1}`;
+        return `viaName${i + 1}=${encodeURIComponent(name)}&viaX${i + 1}=${v.lon}&viaY${i + 1}=${v.lat}`;
+      })
+      .join("&");
+
+    const appURL = `tmap://route?startx=${startLon}&starty=${startLat}&goalx=${endLon}&goaly=${endLat}&startname=출발지&goalname=도착지${viaParams ? `&${viaParams}` : ""}&appKey=vlxDMNvK4Q3NY3i9Rm7e24E2twBIgIeT7H6nOHQE`;
+    const fallbackURL = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku"; // Tmap 설치 링크
+
+const now = new Date().getTime();
+window.location.href = appURL;
+
+// 일정 시간 후 fallback (앱이 실행 안 되면 그대로 머무름 → fallback 이동)
+setTimeout(() => {
+  if (new Date().getTime() - now < 2000) {
+    window.location.href = fallbackURL;
+  }
+}, 1500);
+
+    window.location.href = appURL;
+
   };
 
   return (
@@ -1164,7 +1189,7 @@ export default function RecommendRoute() {
       </div>
 
       {/* 네비연결(안내시작) 버튼 */}
-      <button className="navi-start-btn">네비연결</button>
+      <button className="navi-start-btn" onClick={openTmapApp} >네비연결</button>
     </div>
   );
 }

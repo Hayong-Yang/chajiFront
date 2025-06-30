@@ -2,6 +2,7 @@ import axios from "axios";
 import { fetchChargerFee } from "../api/fee";
 import { fetchRoamingFee } from "../api/roamingPrice";
 
+
 axios.defaults.baseURL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8082";
 
@@ -32,11 +33,17 @@ export const getStationNear = async (
     console.warn("🚨 mapInstance.current가 없습니다!");
     return;
   }
-  if (!markersRef?.current || !Array.isArray(markersRef.current)) {
-    console.warn("🚨 markersRef.current가 비정상입니다:", markersRef?.current);
+   const zoom = mapInstance.current.getZoom();
+
+  // ✅ 줌레벨이 13 이하면 상세 마커는 무시
+  if (zoom <= 13) {
+    console.log("⛔ 상세 마커 로딩 중단 (줌레벨 <= 13)");
     return;
   }
-
+if (!Array.isArray(markersRef.current)) {
+  console.warn("🚨 markersRef.current가 배열이 아님. 초기화합니다.");
+  markersRef.current = [];
+}
   try {
     const response = await axios.post("/api/station/getStationNear", {
       lat: centerLat,
@@ -68,10 +75,14 @@ export const getStationNear = async (
         entry.marker === destMarkerRef.current
     );
 
+    const existingStatIds = markersRef.current.map((entry) =>
+  entry.data.statId?.toString()
+);
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
 
     stations.forEach((station) => {
       const statIdStr = station.statId?.toString();
+      if (!statIdStr || existingStatIds.includes(statIdStr)) return;
       const isOrigin =
         originMarkerRef.current?.dataStatId?.toString() === statIdStr;
       const isDest =
@@ -147,7 +158,7 @@ export const registerMapCenterListener = (
   map,
   setStationNear,
   getStationNear,
-  mapInstanceRef,
+  mapInstance,
   markersRef,
   setSelectedStation,
   filterOptionsRef,
@@ -172,7 +183,7 @@ export const registerMapCenterListener = (
       await getStationNear(
         centerLat,
         centerLon,
-        mapInstanceRef,
+        mapInstance,
         markersRef,
         setSelectedStation,
         filterOptionsRef.current,
@@ -189,7 +200,7 @@ export const registerMapCenterListener = (
 
 //실시간 위치 추적 함수
 export const trackUserMovement = (
-  mapInstanceRef,
+  mapInstance,
   userMarkerRef,
   setStationNear,
   getStationNear,
@@ -211,7 +222,7 @@ export const trackUserMovement = (
         console.log("사용자 이동 감지:", newLat, newLon);
 
         // 사용자 마커 갱신 / 출력
-        const map = mapInstanceRef.current;
+        const map = mapInstance.current;
         if (!map) return;
 
         const positionObj = new window.Tmapv2.LatLng(newLat, newLon);
@@ -237,7 +248,7 @@ export const trackUserMovement = (
           getStationNear(
             newLat,
             newLon,
-            mapInstanceRef,
+            mapInstance,
             markersRef,
             setSelectedStation,
             filterOptionsRef.current,
