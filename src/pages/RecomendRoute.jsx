@@ -699,8 +699,12 @@ export default function RecommendRoute() {
 
   //프론트에서 충전소 상태 API 병렬 호출
   const getStationStatus = async (statId, distanceToStation) => {
+    // 하용 키
+    // const urlEncoded =
+    //   "Wq%2BLPbmdYSbixCNUPkPm%2B3vWdEP6EHCS%2Fx%2FUNPAejzZCAlbDERkA7NZG3aqfORfDOT9cc1Sa7KgaXrpIzaaNAQ%3D%3D";
+    // 혜진 키
     const urlEncoded =
-      "Wq%2BLPbmdYSbixCNUPkPm%2B3vWdEP6EHCS%2Fx%2FUNPAejzZCAlbDERkA7NZG3aqfORfDOT9cc1Sa7KgaXrpIzaaNAQ%3D%3D";
+      "5fh1iyaZ1J7cmI8j1rYxs8gqu38xTrq7tfhweTdERepTeyYpeyqRArG1Ja1re0szzkXY%2B%2Fu%2BeObGbhZ6f%2B41mg%3D%3D";
 
     const urlStr = `http://apis.data.go.kr/B552584/EvCharger/getChargerInfo?serviceKey=${urlEncoded}&numOfRows=9999&pageNo=1&statId=${statId}&dataType=JSON`;
     try {
@@ -790,31 +794,6 @@ export default function RecommendRoute() {
     setBatteryInfo(tempBatteryInfo); // 실제 상태 업데이트
     setShowSettings(false);
     requestRoute(); // 경로 재계산
-
-// 네비 연결
-   const openTmapApp = () => {
-    const viaParams = (waypointsLatLng || []) 
-      .map((v, i) => {
-        const name = v.name ?? `WP${i + 1}`;
-        return `viaName${i + 1}=${encodeURIComponent(name)}&viaX${i + 1}=${v.lon}&viaY${i + 1}=${v.lat}`;
-      })
-      .join("&");
-
-    const appURL = `tmap://route?startx=${startLon}&starty=${startLat}&goalx=${endLon}&goaly=${endLat}&startname=출발지&goalname=도착지${viaParams ? `&${viaParams}` : ""}&appKey=vlxDMNvK4Q3NY3i9Rm7e24E2twBIgIeT7H6nOHQE`;
-    const fallbackURL = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku"; // Tmap 설치 링크
-
-const now = new Date().getTime();
-window.location.href = appURL;
-
-// 일정 시간 후 fallback (앱이 실행 안 되면 그대로 머무름 → fallback 이동)
-setTimeout(() => {
-  if (new Date().getTime() - now < 2000) {
-    window.location.href = fallbackURL;
-  }
-}, 1500);
-
-    window.location.href = appURL;
-
   };
 
   return (
@@ -1189,7 +1168,7 @@ setTimeout(() => {
       </div>
 
       {/* 네비연결(안내시작) 버튼 */}
-      <button className="navi-start-btn" onClick={openTmapApp} >네비연결</button>
+      <button className="navi-start-btn">네비연결</button>
     </div>
   );
 }
