@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
-import Poi from "./pages/Poi";
 import RecommendRoute from "./pages/RecomendRoute";
 import Master from "./pages/master";
 import Register from "./pages/Register";
@@ -29,6 +28,7 @@ export default function App() {
       <Route path="/editprofile" element={<EditProfile />} />
     </Routes>
   );
+
 }
 
 //Navigate: 특정 경로로 자동 이동할 때 사용 (예: 기본 URL에서 로그인으로 강제 이동)
