@@ -2090,9 +2090,9 @@ export default function Home() {
                   }}
                 >
                   {selectedStation.parkingFree === "Y"
-                    ? "무료"
+                    ? "주차 무료"
                     : selectedStation.parkingFree === "N"
-                    ? "유료"
+                    ? "주차 유료"
                     : "주차료정보없음"}
                 </span>
                 {selectedStation.limitDetail && (
@@ -2356,53 +2356,138 @@ export default function Home() {
                         );
                     })()}
                   </div>
-                  {/* 하단 신고/제보, 리뷰쓰기 버튼 */}
+
+                  {/* 요금 정보란 */}
                   <div
                     style={{
-                      display: "flex",
-                      gap: 12,
                       margin: "18px 0 0 0",
-                      justifyContent: "center",
+                      padding: "18px 0 0 0",
+                      borderTop: "1.5px solid #e0e7ef",
                     }}
                   >
-                    <button
+                    <div
                       style={{
-                        flex: 1,
-                        background: "#31ba81",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 12,
                         fontWeight: 700,
-                        fontSize: 16,
-                        padding: "12px 0",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
+                        fontSize: 17,
+                        marginBottom: 10,
                       }}
                     >
-                      <span style={{ fontSize: 20 }}>📢</span> 신고/제보
-                    </button>
-                    <button
-                      style={{
-                        flex: 1,
-                        background: "#fff",
-                        color: "#1976d2",
-                        border: "2px solid #b2e0f7",
-                        borderRadius: 12,
-                        fontWeight: 700,
-                        fontSize: 16,
-                        padding: "12px 0",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <span style={{ fontSize: 20 }}>✏️</span> 리뷰 쓰기
-                    </button>
+                      요금 정보
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+                      {/* 급속 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          급속
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.fastMemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          비회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.fastNonmemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                      </div>
+                      {/* 완속 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          완속
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.lowMemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          비회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.lowNonmemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                      </div>
+                      {/* 로밍 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          로밍
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          {selectedStation.roamingInfo
+                            ? selectedStation.roamingInfo
+                            : "로밍 요금 정보 없음"}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2423,6 +2508,8 @@ export default function Home() {
                 background: "rgba(0,0,0,0.25)",
                 zIndex: 3400,
                 cursor: "pointer",
+                pointerEvents: showList ? "auto" : "none",
+                display: showList ? "block" : "none",
               }}
             />
             <motion.div
@@ -2444,6 +2531,8 @@ export default function Home() {
                 overflowY: "auto",
                 padding: "24px 18px 32px 18px",
                 borderRadius: "24px 0 0 24px",
+                pointerEvents: showList ? "auto" : "none",
+                display: showList ? "block" : "none",
               }}
             >
               <div
