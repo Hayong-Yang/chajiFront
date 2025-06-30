@@ -1672,7 +1672,7 @@ export default function Home() {
               maxWidth: "100vw",
               zIndex: 1500,
               background: "rgba(25,118,210,0.65)",
-              color: "#fff",
+              color: "#222",
               border: "none",
               borderRadius: "16px",
               padding: "18px 12px",
@@ -1682,22 +1682,57 @@ export default function Home() {
               minWidth: 0,
             }}
           >
-            {providerOptions.map((opt) => (
-              <label
-                key={opt.code}
-                style={{ display: "block", marginBottom: 4, color: "#fff" }}
-              >
-                <input
-                  type="checkbox"
-                  name="provider"
-                  value={opt.code}
-                  checked={filterOptions.provider.includes(opt.code)}
-                  onChange={handleInlineProviderChange}
-                  style={{ marginRight: 6 }}
-                />{" "}
-                {opt.label}
-              </label>
-            ))}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "12px",
+                justifyContent: "flex-start",
+              }}
+            >
+              {providerOptions.map((opt) => {
+                const selected = filterOptions.provider.includes(opt.code);
+                return (
+                  <button
+                    key={opt.code}
+                    onClick={() => {
+                      // 토글 방식
+                      setFilterOptions((prev) => {
+                        const exists = prev.provider.includes(opt.code);
+                        return {
+                          ...prev,
+                          provider: exists
+                            ? prev.provider.filter((c) => c !== opt.code)
+                            : [...prev.provider, opt.code],
+                        };
+                      });
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      border: selected
+                        ? "2px solid #2196f3"
+                        : "1.5px solid #b2dfdb",
+                      background: selected ? "#e3f2fd" : "#fff",
+                      color: selected ? "#1976d2" : "#222",
+                      borderRadius: "20px",
+                      padding: "4px 12px",
+                      fontWeight: 600,
+                      fontSize: "15px",
+                      cursor: "pointer",
+                      boxShadow: selected
+                        ? "0 2px 8px rgba(33,150,243,0.08)"
+                        : "none",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {/* 로고 이미지 등은 추후 확장 가능 */}
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
         {activeDropdown === "memberCompany" && (
