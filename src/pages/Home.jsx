@@ -357,6 +357,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 }
 
 export default function Home() {
+  const [loading, setLoading] = useState(true); // 지도 로딩중 상태
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [memberCompany, setMemberCompany] = useState("ME");
@@ -688,6 +689,10 @@ export default function Home() {
       destMarkerRef,
       memberCompanyRef
     );
+    onMapReady(); // 마커 다 그려진 후
+    setTimeout(() => {
+      setLoading(false); // 물개 퇴장!
+    }, 4000); // 단위: ms (여기선 1초)
 
     console.log("전송할 필터옵션:", filterOptions);
 
@@ -720,6 +725,7 @@ export default function Home() {
     );
     setTimeout(() => {
       onMapReady(); // mapInstance.current 확실히 존재할 시점
+      // setLoading(false); // 로딩 완료
     }, 0);
   };
 
@@ -1186,6 +1192,18 @@ export default function Home() {
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
+      {loading && (
+        <div className="splash-screen">
+          <img
+            src="/img/seal-driver.png"
+            alt="차지차지 시작!"
+            className="seal-icon"
+          />
+          <h1 className="splash-title">차지차지!</h1>
+          <p className="splash-subtitle">전기차 라이프의 시작을 함께해요 ⚡</p>
+        </div>
+      )}
+
       {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
       <div
         className="search-fixed-container"
