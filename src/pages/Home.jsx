@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -11,6 +11,11 @@ import {
   registerMapCenterListener,
   trackUserMovement,
 } from "../api/map";
+import {
+  addFavorite,
+  deleteFavorite,
+  isFavoriteStation,
+} from "../api/favorite";
 import "./home.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
@@ -1033,6 +1038,29 @@ export default function Home() {
     });
   };
 
+  // 즐겨찾기 toggleFavorite함수
+  const toggleFavorite = async () => {
+    if (!selectedStation) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await deleteFavorite(selectedStation.statId, token);
+      } else {
+        await addFavorite(selectedStation.statId, token);
+      }
+      setIsFavorite((prev) => !prev);
+    } catch (err) {
+      console.error("즐겨찾기 처리 중 오류:", err);
+      alert("즐겨찾기 처리 중 문제가 발생했습니다.");
+    }
+  };
+
   // === 이상/이하 select 박스 핸들러 ===
   const handleOutputSelect = (e) => {
     const { name, value } = e.target;
@@ -1169,7 +1197,10 @@ export default function Home() {
                 padding: 0,
                 fontWeight: 500,
               }}
-              placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+              placeholderStyle={{
+                color: "#1976d2",
+                opacity: 0.7,
+              }}
             />
           </div>
         ) : (
@@ -1187,7 +1218,13 @@ export default function Home() {
               borderRadius: 0,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               <AutocompleteInput
                 label="출발지"
                 value={originInput}
@@ -1203,7 +1240,10 @@ export default function Home() {
                   padding: 0,
                   fontWeight: 500,
                 }}
-                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+                placeholderStyle={{
+                  color: "#1976d2",
+                  opacity: 0.7,
+                }}
               />
               <button
                 className="swap-button"
@@ -1227,7 +1267,13 @@ export default function Home() {
                 ↕
               </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               <AutocompleteInput
                 label="도착지"
                 value={destInput}
@@ -1243,7 +1289,10 @@ export default function Home() {
                   padding: 0,
                   fontWeight: 500,
                 }}
-                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+                placeholderStyle={{
+                  color: "#1976d2",
+                  opacity: 0.7,
+                }}
               />
               <button
                 className="add-dest-button"
@@ -1407,7 +1456,13 @@ export default function Home() {
           </label>
 
           {/* === 충전 속도 '이상/이하' 셀렉트 === */}
-          <div style={{ margin: "20px 0 0", fontWeight: 600, fontSize: 16 }}>
+          <div
+            style={{
+              margin: "20px 0 0",
+              fontWeight: 600,
+              fontSize: 16,
+            }}
+          >
             충전속도
           </div>
           <div
@@ -1569,7 +1624,10 @@ export default function Home() {
               {providerOptions.map((opt) => (
                 <label
                   key={opt.code}
-                  style={{ display: "block", marginBottom: 4 }}
+                  style={{
+                    display: "block",
+                    marginBottom: 4,
+                  }}
                 >
                   <input
                     type="checkbox"
