@@ -1,9 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { handleZoomChange } from "../api/zoom";
+import {
+  faUser,
+  faComments,
+  faHeadset,
+  faCog,
+} from "@fortawesome/free-solid-svg-icons";
+import { getUserInfo, logoutUser } from "../api/member";
 
 import {
   setStationNear,
@@ -359,7 +366,7 @@ export default function Home() {
   const [stations, setStations] = useState([]); // 충전소 리스트
   const [showList, setShowList] = useState(false); // 리스트 뷰 토글
   const [showDrawer, setShowDrawer] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("home"); // 선택된 메뉴
+  const [activeMenu, setActiveMenu] = useState("mypage"); // 선택된 메뉴
   const [suggestions, setSuggestions] = useState([]);
   const [query, setQuery] = useState("");
 
@@ -384,6 +391,28 @@ export default function Home() {
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
   const zoomMarkers = useRef([]);
+  const [user, setUser] = useState(null);
+  const token = useMemo(() => localStorage.getItem("accessToken"), []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    getUserInfo(token)
+      .then((res) => setUser(res))
+      .catch((err) => console.warn("사용자 정보를 불러오지 못했습니다.", err));
+  }, [token]);
+
+  const handleRegister = () => navigate("/register");
+  const handleLogin = () => navigate("/login");
+
+  const handleProtectedClick = (path) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요해요! 🐾");
+      return;
+    }
+    navigate(path);
+  };
 
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
@@ -2745,33 +2774,87 @@ export default function Home() {
                   alt="프로필"
                   className="profile-image"
                 />
-                <div className="login-links">회원가입 | 로그인</div>
+                <div className="login-links">
+                  {user ? (
+                    <div className="user-info-row">
+                      <div className="user-name">{user.userName} 님</div>
+                      <button
+                        className="logout-button"
+                        onClick={() => {
+                          localStorage.removeItem("accessToken");
+                          setUser(null);
+                          window.location.reload();
+                        }}
+                      >
+                        로그아웃
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="login-buttons-row">
+                        <button
+                          className="login-button"
+                          onClick={handleRegister}
+                        >
+                          회원가입
+                        </button>
+                        <span className="divider">|</span>
+                        <button className="login-button" onClick={handleLogin}>
+                          로그인
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="drawer-welcome">
-                차지차지와 함께 행복한 하루 보내세요!
-              </div>
+              <div className="drawer-welcome">오늘도 차지차지와 함께 😊</div>
 
               {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
               <div className="drawer-body">
                 <div className="icon-column">
                   <div onClick={() => setActiveMenu("mypage")}>
-                    <img src="/img/icon-profile.png" alt="마이페이지" />
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className={`menu-icon ${
+                        activeMenu === "mypage" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("community")}>
-                    <img src="/img/icon-community.png" alt="커뮤니티" />
+                    <FontAwesomeIcon
+                      icon={faComments}
+                      className={`menu-icon ${
+                        activeMenu === "community" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("support")}>
-                    <img src="/img/icon-support.png" alt="고객센터" />
+                    <FontAwesomeIcon
+                      icon={faHeadset}
+                      className={`menu-icon ${
+                        activeMenu === "support" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("settings")}>
-                    <img src="/img/icon-settings.png" alt="설정" />
+                    <FontAwesomeIcon
+                      icon={faCog}
+                      className={`menu-icon ${
+                        activeMenu === "settings" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                 </div>
 
                 <div className="text-column">
                   {activeMenu === "mypage" && (
                     <div className="text-list">
-                      <div className="text-item">내 활동</div>
+                      <div
+                        className="text-item"
+                        onClick={() => handleProtectedClick("/mypage")}
+                      >
+                        MyPage
+                      </div>
                       <div className="text-item">내가 쓴 글 보기</div>
                       <div className="text-item">충전소 제보 내역</div>
                     </div>
@@ -2799,6 +2882,7 @@ export default function Home() {
             </div>
           </>
         )}
+
         <button
           className="current-location-button"
           onClick={moveToCurrentLocation}
