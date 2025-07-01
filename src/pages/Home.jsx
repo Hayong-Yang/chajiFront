@@ -539,6 +539,16 @@ export default function Home() {
     );
     setStations(list);
     setShowList(true);
+
+// const map = mapInstance.current;
+//     if (!map) return;
+//     const marker = new window.Tmapv2.Marker({
+//       position,
+//       map})
+//     marker.addListener("click", () => {
+//       const found = stations.find((st) => st.statId === meta.statId);
+//       setSelectedStation(found || meta);
+//     });
   };
 
   // === inline 필터 적용 함수 ===
