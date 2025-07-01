@@ -559,6 +559,7 @@ export default function Home() {
     }
   }, []);
 
+  
   // 리스트보기 핸들러
   const handleShowList = async () => {
     if (showList) {
@@ -575,7 +576,27 @@ export default function Home() {
     setStations(list);
     setShowList(true);
   };
+//충전소 리스트 클릭시
+  const handleStationClick = (station) => {
+  const marker = markersRef.current.find(
+    (m) => m.data?.statId?.toString() === station.statId?.toString()
+  );
 
+  if (marker) {
+    window.Tmapv2.event.trigger(marker, "click");
+
+    const map = mapInstance.current;
+    if (map) {
+      const pos = new window.Tmapv2.LatLng(station.lat, station.lng);
+      map.setCenter(pos);
+      map.setZoom(17);
+    }
+    setShowList(false);
+    setSelectedStation(station);
+  } else {
+    console.warn("❗ 마커를 찾을 수 없습니다:", station.statId);
+  }
+};
   // === inline 필터 적용 함수 ===
   const applyFiltersInline = async (options) => {
     await setStationNear(centerLatRef.current, centerLonRef.current);
@@ -2724,24 +2745,35 @@ export default function Home() {
                   ✕
                 </button>
               </div>
-              <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-                {stations.map((st, idx) => (
-                  <li
-                    key={st.statId + idx}
-                    className="station-item"
-                    style={{
-                      marginBottom: "12px",
-                      borderBottom: "1px solid #eee",
-                      paddingBottom: "8px",
-                    }}
-                  >
-                    <strong>{st.statNm}</strong> ({st.bnm})<br />
-                    {st.addr}
-                    <br />
-                    점수: {st.recommendScore}
-                  </li>
-                ))}
-              </ul>
+ <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+  {stations.map((st, idx) => (
+    <li
+      key={st.statId + idx}
+      className="station-item"
+      style={{
+        marginBottom: "12px",
+        borderBottom: "1px solid #eee",
+        paddingBottom: "8px",
+      }}
+    >
+      <div
+        onClick={() => handleStationClick(st)}
+        style={{
+          cursor: "pointer",
+          padding: "6px 4px",
+          borderRadius: "6px",
+          transition: "background 0.2s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "#f9f9f9"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+      >
+        <strong>{st.statNm}</strong> <span style={{ fontSize: "13px", color: "#888" }}>({st.bnm})</span><br />
+        <span style={{ fontSize: "14px" }}>{st.addr}</span><br />
+        <span style={{ fontSize: "13px", color: "#666" }}>점수: {st.recommendScore}</span>
+      </div>
+    </li>
+  ))}
+</ul>
             </motion.div>
           </>
         )}
