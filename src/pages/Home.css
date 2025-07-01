@@ -493,10 +493,17 @@ input:checked + .slider:before {
   font-size: 15px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
+  text-decoration: none; /* 밑줄 제거 */
+  color: inherit; /* 링크 색상 부모로부터 상속 (선택) */
 }
 
 .text-item:last-child {
   border-bottom: none;
+}
+
+.text-item:hover {
+  color: #1976d2;
+  font-weight: 500;
 }
 
 /* 🔵 충전소 정보 패널 개선 스타일 */

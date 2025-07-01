@@ -59,7 +59,7 @@ export default function Mypage() {
           <div className="bubble" />
           <div className="bubble small" />
         </div>
-        <p className="loading-text">충전 중입니다... 🔌</p>
+        <p className="loading-text">사용자 정보 가져오는 중... 🌊</p>
       </div>
     );
 

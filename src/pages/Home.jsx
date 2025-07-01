@@ -399,6 +399,15 @@ export default function Home() {
   const handleRegister = () => navigate("/register");
   const handleLogin = () => navigate("/login");
 
+  const handleProtectedClick = (path) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요해요! 🐾");
+      return;
+    }
+    navigate(path);
+  };
+
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
 
@@ -2262,7 +2271,12 @@ export default function Home() {
                 <div className="text-column">
                   {activeMenu === "mypage" && (
                     <div className="text-list">
-                      <div className="text-item">내 활동</div>
+                      <div
+                        className="text-item"
+                        onClick={() => handleProtectedClick("/mypage")}
+                      >
+                        MyPage
+                      </div>
                       <div className="text-item">내가 쓴 글 보기</div>
                       <div className="text-item">충전소 제보 내역</div>
                     </div>

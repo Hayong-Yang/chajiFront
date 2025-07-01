@@ -41,7 +41,7 @@ export default function Login() {
         />
       </p>
       <button onClick={handleLogin}>로그인</button>
-      <p>{message}</p>
+      <p className="message">{message}</p>
 
       <div className="bottom-link">
         아직 회원이 아니신가요? <Link to="/register">회원가입</Link>
