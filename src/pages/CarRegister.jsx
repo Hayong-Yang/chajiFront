@@ -17,6 +17,7 @@ const CarRegister = () => {
   const [nickname, setNickname] = useState("");
 
   const [connectors, setConnectors] = useState(null);
+  const navigate = useNavigate();
 
   //토큰 확인
   useEffect(() => {
