@@ -2932,7 +2932,7 @@ export default function Home() {
               color: "#222",
               cursor: "pointer",
             }}
-            onClick={() => setActiveMenu("community")}
+            onClick={() => navigate("/community")}
           >
             <span style={{ fontSize: 22, marginBottom: 2 }}>💬</span>
             커뮤니티
