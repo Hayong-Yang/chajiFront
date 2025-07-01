@@ -2861,7 +2861,12 @@ export default function Home() {
                   )}
                   {activeMenu === "community" && (
                     <div className="text-list">
-                      <div className="text-item">자유게시판</div>
+                      <div
+                        className="text-item"
+                        onClick={() => navigate("/community")}
+                      >
+                        커뮤니티
+                      </div>
                       <div className="text-item">정보공유</div>
                     </div>
                   )}

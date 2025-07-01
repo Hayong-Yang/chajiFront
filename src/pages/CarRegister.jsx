@@ -123,6 +123,7 @@ const CarRegister = () => {
       });
 
       alert("차량이 등록되었습니다.");
+      navigate("/mypage");
     } catch (err) {
       console.error("등록 실패:", err);
       alert("등록 중 오류가 발생했습니다.");

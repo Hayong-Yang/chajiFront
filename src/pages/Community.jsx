@@ -10,19 +10,25 @@ export default function Community() {
     {
       id: 1,
       title: "서울 충전소 추천해주세요 🐧",
-      author: "전기토끼",
+      author: "hyejin",
       date: "2025.07.01",
     },
     {
       id: 2,
       title: "충전소에서 이런 경험 해보셨나요?",
-      author: "EcoDriver",
+      author: "hyeonseogo",
       date: "2025.06.30",
     },
     {
       id: 3,
       title: "완속충전기와 급속충전기 차이점 정리",
-      author: "EV초보",
+      author: "dhkim",
+      date: "2025.06.28",
+    },
+    {
+      id: 4,
+      title: "완속충전기와 급속충전기 차이점 정리",
+      author: "ha2yong",
       date: "2025.06.28",
     },
   ];
@@ -34,7 +40,7 @@ export default function Community() {
           <FaArrowLeft className="home-icon" />
         </Link>
       </div>
-      <header className="community-header">🔌 충전소 커뮤니티</header>
+      <header className="community-header">🔌 차지차지 커뮤니티</header>
 
       <div className="post-list">
         {dummyPosts.map((post) => (
