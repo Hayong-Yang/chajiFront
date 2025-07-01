@@ -11,17 +11,15 @@
 
 /* 패널은 버튼 바로 아래 */
 .filter-panel {
-  position: absolute;
-  top: 58px; /* 버튼 아래 간격 */
-  left: 0;
-  background-color: white;
-  border: 1px solid #aaa;
-  border-radius: 6px;
-  padding: 15px;
-  z-index: 1000;
-  width: 240px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-family: "Nanum Pen Script", "Noto Sans KR", sans-serif;
+  position: fixed;
+  top: 112px; /* 검색창+필터바 높이만큼 내려오게 조정 */
+  left: 16px; /* 버튼 위치에 맞게 조정 */
+  z-index: 999;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  min-width: 280px;
 }
 
 .filter-panel label {
@@ -43,21 +41,17 @@
 /* 자동완성 입력 전체 wrapper */
 /* === 공통 검색 컨테이너 === */
 .search-fixed-container {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ffffffee;
-  backdrop-filter: blur(6px);
-  padding: 16px;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 100;
+  background: #fff;
   display: flex;
-  gap: 12px;
   align-items: center;
-  z-index: 1000;
-  flex-wrap: wrap;
-  max-width: 90%;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #eee;
 }
 
 /* === Autocomplete Wrapper === */
@@ -154,16 +148,22 @@
 /* inline 필터 바 */
 /* 전체 필터 바 */
 .inline-filter-bar {
-  position: relative;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 100vw;
+  z-index: 101;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  border-radius: 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 8px 0 8px 8px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #dff6fd; /* 연한 하늘색 */
-  border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0, 70, 160, 0.1);
-  font-family: "Nanum Pen Script", cursive; /* 귀여운 필기체 느낌 */
-  font-size: 18px;
+  gap: 8px;
 }
 
 /* 필터 버튼 */
@@ -186,37 +186,48 @@
 /* 드롭다운 공통 */
 .dropdown {
   position: absolute;
-  top: 58px;
+  top: 100%;
   left: 0;
   padding: 10px;
   background: #ffffff;
   border: 2px solid #aee4ff;
   border-radius: 16px;
   box-shadow: 0 4px 8px rgba(0, 50, 100, 0.15);
-  z-index: 100;
+  z-index: 1000;
   animation: fadeIn 0.25s ease-in-out;
+  max-height: 300px;
+  overflow-y: auto;
+  min-width: 200px;
 }
 
 /* 충전속도 드롭다운 */
 .speed-dropdown select {
   padding: 6px;
-  border: 1px solid #b2e0f7;
-  border-radius: 8px;
-  background: #f2fbff;
-  font-size: 16px;
-  font-family: "Noto Sans KR", sans-serif;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin: 0 4px;
 }
 
 /* 충전타입 드롭다운 */
 .type-dropdown label {
-  font-size: 16px;
-  font-family: "Noto Sans KR", sans-serif;
-  color: #333;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 
 .type-dropdown input[type="checkbox"] {
-  accent-color: #51bde3;
-  transform: scale(1.2);
+  margin-right: 8px;
+}
+
+/* 사업자 드롭다운 */
+.provider-dropdown label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.provider-dropdown input[type="checkbox"] {
   margin-right: 8px;
 }
 
@@ -281,16 +292,14 @@ input:checked + .slider:before {
 /* ======================= 햄버거 버튼 ======================= */
 
 .hamburger-button {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  font-size: 24px;
-  z-index: 1000;
-  background: white;
-  border: 1px solid #ccc;
-  padding: 6px 12px;
-  border-radius: 6px;
+  margin-right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
   cursor: pointer;
+  color: #222;
+  display: flex;
+  align-items: center;
 }
 
 /* ======================= 사이드 드로어 ======================= */
@@ -604,7 +613,7 @@ input:checked + .slider:before {
 /* 상태별 컬러 */
 .station-info-panel .status.active {
   background: #d7ffec;
-  color: #1e9d6a;
+  color: #1976d2;
   box-shadow: 0 2px 4px rgba(0, 160, 100, 0.15);
 }
 
@@ -636,55 +645,79 @@ input:checked + .slider:before {
 
 /* 리스트 보기 아이콘 */
 .seal-button {
-  background: #cbefff; /* 밝은 파랑 톤 */
-  color: #1a3c59;
-  font-family: "DungGeunMo", "Noto Sans KR", sans-serif;
-  font-size: 15px;
-  padding: 10px 18px;
-  border: 2px solid #88ccee;
-  border-radius: 30px;
-  box-shadow: 0 4px 12px rgba(0, 90, 150, 0.2);
+  position: absolute;
+  right: 24px;
+  bottom: 235px;
+  z-index: 2900;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: 0.2s ease;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 18px rgba(25, 118, 210, 0.18);
+  padding: 0;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  font-size: 22px;
+  font-weight: 700;
   cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.13s;
+  outline: none;
+  user-select: none;
 }
 
 .seal-button .emoji {
-  font-size: 20px;
-  animation: wave 1.5s infinite ease-in-out;
+  display: none;
 }
 
-.seal-button:hover {
-  background: #b8e4ff;
-  transform: scale(1.05);
+.seal-button .book-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  margin: 0 auto;
+  fill: #fff;
 }
 
-@keyframes wave {
-  0%,
-  100% {
-    transform: rotate(0deg);
+.seal-button:hover,
+.seal-button:active {
+  background: #1251a8;
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(25, 118, 210, 0.22);
+  transform: translateY(-2px) scale(1.06);
+}
+
+@media (max-width: 600px) {
+  .seal-button {
+    right: 12px;
+    bottom: 235px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 18px;
   }
-  25% {
-    transform: rotate(10deg);
-  }
-  75% {
-    transform: rotate(-10deg);
+  .seal-button .book-icon {
+    width: 22px;
+    height: 22px;
   }
 }
 
 /* 현위치 */
 .current-location-button {
   position: absolute;
-  bottom: 80px;
-  right: 10px;
+  bottom: 165px;
+  right: 12px;
   z-index: 999;
 
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid #33c9aa;
+  border: 2px solid #1976d2;
   background-color: #ffffff;
 
   display: flex;
@@ -692,7 +725,7 @@ input:checked + .slider:before {
   justify-content: center;
 
   font-size: 20px;
-  color: #33c9aa;
+  color: #1976d2;
 
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
@@ -702,4 +735,131 @@ input:checked + .slider:before {
 .current-location-button:hover {
   background-color: #ecfaf3;
   transform: scale(1.08);
+}
+
+html,
+body,
+#root,
+.map-container,
+#map_div {
+  width: 100%;
+  height: 100vh;
+  max-width: 100%;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: initial;
+}
+
+.home-map-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  z-index: 1;
+  background: #fff;
+}
+
+.member-company-selector {
+  position: fixed;
+  top: 170px; /* seal-button 하단+여백 */
+  right: 18px;
+  z-index: 101;
+}
+
+.dropdown.speed-dropdown,
+.dropdown.type-dropdown {
+  position: fixed;
+  top: 112px; /* 검색창+필터바 높이만큼 내려오게 조정 */
+  left: 16px; /* 버튼 위치에 맞게 조정, 필요시 JS로 동적 조정 가능 */
+  z-index: 999;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  min-width: 180px;
+}
+
+.dropdown.member-company-dropdown {
+  position: fixed;
+  top: 112px;
+  left: 180px;
+  z-index: 2000;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  min-width: 180px;
+  display: block;
+  visibility: visible;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.dropdown-search {
+  width: 90%;
+  margin: 8px 5%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.dropdown-options-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.bottom-floating-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: 92vw;
+  max-width: 420px;
+  min-width: 220px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 12px 0;
+  z-index: 1200;
+}
+
+.bottom-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.05rem;
+  color: #222;
+  cursor: pointer;
+  flex: 1;
+}
+
+.bar-icon {
+  font-size: 1.5rem;
+  margin-bottom: 2px;
+  color: #222;
 }
