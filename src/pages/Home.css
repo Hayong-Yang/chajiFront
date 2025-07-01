@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Jua&family=Do+Hyeon&display=swap");
+
 .filter-button {
   padding: 8px 12px;
   background-color: white;
@@ -950,4 +952,87 @@ body,
   font-size: 1.5rem;
   margin-bottom: 2px;
   color: #222;
+}
+
+/* 로딩중 물개 - 운전 스타일 */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #d1f2ff, #ffffff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  text-align: center;
+  font-family: "Jua", sans-serif;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.seal-icon {
+  width: 150px;
+  height: auto;
+  animation: drive 2.4s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.splash-title {
+  font-family: "Jua", sans-serif !important;
+  font-size: 2.6rem;
+  font-weight: bold;
+  margin: 0;
+  animation: bounce 1.6s ease-in-out infinite;
+  color: #0077cc;
+}
+
+.splash-subtitle {
+  font-size: 1.2rem;
+  color: #333;
+  margin-top: 12px;
+  opacity: 0.9;
+}
+
+/* 등장 애니메이션 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 물개 운전 애니메이션 */
+@keyframes drive {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  20% {
+    transform: translateX(6px) rotate(1.5deg);
+  }
+  50% {
+    transform: translateX(0px) rotate(0deg);
+  }
+  80% {
+    transform: translateX(-6px) rotate(-1.5deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+/* 제목 bounce */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
