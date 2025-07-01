@@ -613,12 +613,12 @@ export default function RecommendRoute() {
     }
 
     // 8. ui 부분 마커 표시
-    const defaultSize = new Tmapv2.Size(32, 32);
+    const defaultSize = new Tmapv2.Size(48, 48);
 
     const newMarkers = finalStations.map((station) => {
       const marker = new Tmapv2.Marker({
         position: new Tmapv2.LatLng(station.lat, station.lng),
-        icon: "/img/logos/default.png",
+        icon: "/img/pointer/redMarker.png",
         iconSize: defaultSize,
         title: station.statNm,
         map: mapRef.current,
@@ -1139,18 +1139,68 @@ export default function RecommendRoute() {
                 }
               }}
             >
-              <div className="station-card-title">{card.name}</div>
-              <div className="station-card-info">
-                <span>총 소요 시간: {card.totalTime}</span>
-                <span>우회 시간: {card.detour}</span>
-                <span>{card.distance}</span>
-                <span>{card.fare}</span>
-                <span>
-                  충전 예상시간: {card.chargingTime} / 충전 후:
-                  {card.arrivalPercent}
+              <div
+                className="station-card-title"
+                style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}
+              >
+                {card.name}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  marginBottom: 2,
+                }}
+              >
+                <span style={{ fontWeight: 800, fontSize: 22, color: "#222" }}>
+                  {card.totalTime}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "#1976d2",
+                    fontWeight: 600,
+                    marginLeft: 8,
+                  }}
+                >
+                  {card.detour}
                 </span>
               </div>
-              <div className="station-card-charger">
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  fontSize: 15,
+                  color: "#444",
+                  marginBottom: 2,
+                }}
+              >
+                <span>{card.distance}</span>
+                <span>·</span>
+                <span>{card.fare}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  fontSize: 14,
+                  color: "#666",
+                  marginBottom: 2,
+                }}
+              >
+                <span>충전예상 {card.chargingTime}</span>
+                <span>·</span>
+                <span>충전후 {card.arrivalPercent}%</span>
+              </div>
+              <div
+                style={{
+                  fontSize: 15,
+                  color: "#1976d2",
+                  fontWeight: 600,
+                  marginBottom: 2,
+                }}
+              >
                 {card.total === null
                   ? "🔌 충전기 정보 없음"
                   : `🔌 사용가능 ${card.available} / ${card.total}`}
