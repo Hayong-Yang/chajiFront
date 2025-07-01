@@ -736,7 +736,7 @@ input:checked + .slider:before {
   position: absolute;
   right: 24px;
   bottom: 235px;
-  z-index: 2900;
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
