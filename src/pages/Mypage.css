@@ -284,3 +284,15 @@ h3 {
     opacity: 0;
   }
 }
+
+/*삭제 버튼*/
+.delete-car-btn {
+  margin-left: auto;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
