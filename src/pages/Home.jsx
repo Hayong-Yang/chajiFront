@@ -2051,12 +2051,12 @@ export default function Home() {
                 </div>
                 <button
                   className={`favorite-button ${isFavorite ? "on" : ""}`}
-                  onClick={() => setIsFavorite((prev) => !prev)}
+                  onClick={toggleFavorite}
                   title="즐겨찾기"
                   style={{
                     fontSize: 22,
-                    background: "none",
-                    border: "none",
+                    // background: "none",
+                    // border: "none",
                     cursor: "pointer",
                   }}
                 >
