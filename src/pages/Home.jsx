@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -11,10 +11,16 @@ import {
   registerMapCenterListener,
   trackUserMovement,
 } from "../api/map";
+import {
+  addFavorite,
+  deleteFavorite,
+  isFavoriteStation,
+} from "../api/favorite";
 import "./home.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
 import { faLocationArrow } from "@fortawesome/free-solid-svg-icons";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 
 function timeAgo(lastTedt) {
   if (!lastTedt || lastTedt.length !== 14) return "정보 없음";
@@ -1042,6 +1048,29 @@ export default function Home() {
     });
   };
 
+  // 즐겨찾기 toggleFavorite함수
+  const toggleFavorite = async () => {
+    if (!selectedStation) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await deleteFavorite(selectedStation.statId, token);
+      } else {
+        await addFavorite(selectedStation.statId, token);
+      }
+      setIsFavorite((prev) => !prev);
+    } catch (err) {
+      console.error("즐겨찾기 처리 중 오류:", err);
+      alert("즐겨찾기 처리 중 문제가 발생했습니다.");
+    }
+  };
+
   // === 이상/이하 select 박스 핸들러 ===
   const handleOutputSelect = (e) => {
     const { name, value } = e.target;
@@ -1114,7 +1143,6 @@ export default function Home() {
     });
   };
 
-
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
@@ -1179,7 +1207,10 @@ export default function Home() {
                 padding: 0,
                 fontWeight: 500,
               }}
-              placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+              placeholderStyle={{
+                color: "#1976d2",
+                opacity: 0.7,
+              }}
             />
           </div>
         ) : (
@@ -1197,7 +1228,13 @@ export default function Home() {
               borderRadius: 0,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               <AutocompleteInput
                 label="출발지"
                 value={originInput}
@@ -1213,7 +1250,10 @@ export default function Home() {
                   padding: 0,
                   fontWeight: 500,
                 }}
-                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+                placeholderStyle={{
+                  color: "#1976d2",
+                  opacity: 0.7,
+                }}
               />
               <button
                 className="swap-button"
@@ -1237,7 +1277,13 @@ export default function Home() {
                 ↕
               </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               <AutocompleteInput
                 label="도착지"
                 value={destInput}
@@ -1253,7 +1299,10 @@ export default function Home() {
                   padding: 0,
                   fontWeight: 500,
                 }}
-                placeholderStyle={{ color: "#1976d2", opacity: 0.7 }}
+                placeholderStyle={{
+                  color: "#1976d2",
+                  opacity: 0.7,
+                }}
               />
               <button
                 className="add-dest-button"
@@ -1274,7 +1323,7 @@ export default function Home() {
                 }}
                 title="경로 추천"
               >
-                +
+                <FontAwesomeIcon icon={faWaveSquare} />
               </button>
             </div>
           </div>
@@ -1292,8 +1341,32 @@ export default function Home() {
         </button>
         {/* 리스트보기 버튼 */}
         <button className="seal-button" onClick={handleShowList}>
-          <span className="emoji">{showList ? "❌" : "🦭"}</span>{" "}
-          {showList ? "닫기" : "리스트 보기"}
+          <svg
+            className="book-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="3" fill="#fff" />
+            <rect
+              x="5.5"
+              y="6.5"
+              width="13"
+              height="11"
+              rx="1.5"
+              fill="#1976d2"
+            />
+            <rect x="7.5" y="8.5" width="9" height="7" rx="1" fill="#fff" />
+            <rect
+              x="9"
+              y="10.5"
+              width="6"
+              height="1.5"
+              rx="0.75"
+              fill="#1976d2"
+            />
+            <rect x="9" y="13" width="4" height="1" rx="0.5" fill="#1976d2" />
+          </svg>
         </button>
         {/* 지도 위 인라인 필터 바 */}
         <div className="inline-filter-bar">
@@ -1393,7 +1466,13 @@ export default function Home() {
           </label>
 
           {/* === 충전 속도 '이상/이하' 셀렉트 === */}
-          <div style={{ margin: "20px 0 0", fontWeight: 600, fontSize: 16 }}>
+          <div
+            style={{
+              margin: "20px 0 0",
+              fontWeight: 600,
+              fontSize: 16,
+            }}
+          >
             충전속도
           </div>
           <div
@@ -1555,7 +1634,10 @@ export default function Home() {
               {providerOptions.map((opt) => (
                 <label
                   key={opt.code}
-                  style={{ display: "block", marginBottom: 4 }}
+                  style={{
+                    display: "block",
+                    marginBottom: 4,
+                  }}
                 >
                   <input
                     type="checkbox"
@@ -1960,194 +2042,689 @@ export default function Home() {
 
           {selectedStation && (
             <>
-              <p>{selectedStation.statNm}</p>
-              <button
-                className={`favorite-button ${isFavorite ? "on" : ""}`}
-                onClick={() => setIsFavorite((prev) => !prev)}
-                title="즐겨찾기"
+              {/* 상단: 충전소명 + 즐겨찾기 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  marginBottom: 4,
+                }}
               >
-                {isFavorite ? "⭐" : "☆"}
-              </button>
-              <p>{selectedStation.bnm}</p>
-              <p>{selectedStation.addr}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {/* 예시 아이콘: 실제 아이콘/로고로 교체 가능 */}
+                  <span style={{ fontSize: 22, marginRight: 2 }}>⚠️</span>
+                  <span style={{ fontWeight: 700, fontSize: 19 }}>
+                    {selectedStation.statNm}
+                  </span>
+                </div>
+                <button
+                  className={`favorite-button ${isFavorite ? "on" : ""}`}
+                  onClick={toggleFavorite}
+                  title="즐겨찾기"
+                  style={{
+                    fontSize: 22,
+                    // background: "none",
+                    // border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {isFavorite ? "⭐" : "☆"}
+                </button>
+              </div>
 
-              <h4>💰 충전 요금</h4>
-              {selectedStation.feeInfo &&
-              (selectedStation.feeInfo.fastMemberPrice != null ||
-                selectedStation.feeInfo.fastNonmemberPrice != null ||
-                selectedStation.feeInfo.lowMemberPrice != null ||
-                selectedStation.feeInfo.lowNonmemberPrice != null) ? (
-                <>
-                  <ul>
-                    <li>
-                      급속 요금 (회원):{" "}
-                      {selectedStation.feeInfo.fastMemberPrice ?? "정보 없음"}{" "}
-                      원/kWh
-                    </li>
-                    <li>
-                      급속 요금 (비회원):{" "}
-                      {selectedStation.feeInfo.fastNonmemberPrice ??
-                        "정보 없음"}{" "}
-                      원/kWh
-                    </li>
-                    <li>
-                      완속 요금 (회원):{" "}
-                      {selectedStation.feeInfo.lowMemberPrice ?? "정보 없음"}{" "}
-                      원/kWh
-                    </li>
-                    <li>
-                      완속 요금 (비회원):{" "}
-                      {selectedStation.feeInfo.lowNonmemberPrice ?? "정보 없음"}{" "}
-                      원/kWh
-                    </li>
-                  </ul>
-                  {selectedStation.roamingInfo && (
-                    <div style={{ marginTop: "10px" }}>
-                      <strong>🔁 로밍 안내:</strong>{" "}
-                      {selectedStation.roamingInfo}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p>요금 정보 없음</p>
-              )}
-
-              <h4>⚡ 충전기 정보</h4>
-              <ul style={{ textAlign: "left", paddingLeft: 10 }}>
+              {/* 지원 충전기 타입 뱃지 */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                  margin: "6px 0 8px 0",
+                }}
+              >
                 {[...(selectedStation.chargers || [])]
-                  .sort((a, b) => Number(a.chgerId) - Number(b.chgerId)) // ID 정렬
-                  .map((c, idx) => {
-                    const typeLabel =
+                  .map(
+                    (c) =>
                       chargerTypeOptions.find((opt) => opt.code === c.chgerType)
-                        ?.label || c.chgerType;
-                    const statusLabel =
-                      {
-                        0: "알 수 없음",
-                        1: "통신 이상",
-                        2: "사용 가능",
-                        3: "충전 중",
-                        4: "운영 중지",
-                        5: "점검 중",
-                      }[c.stat] || "정보 없음";
+                        ?.label || c.chgerType
+                  )
+                  .filter((v, i, arr) => arr.indexOf(v) === i)
+                  .map((label, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        background: "#f2f3f5",
+                        color: "#555",
+                        borderRadius: 8,
+                        padding: "3px 12px",
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {label}
+                    </span>
+                  ))}
+              </div>
 
-                    const timeDiff = timeAgo(c.lastTedt); // 이 부분 조건 분기 필요
-
-                    return (
-                      <li key={idx}>
-                        <div className="row">
-                          <span
-                            className={`status ${
-                              Number(c.stat) === 2
-                                ? "active"
-                                : Number(c.stat) === 3
-                                ? "charging"
-                                : ""
-                            }`}
-                          >
-                            {statusLabel}
-                          </span>
-                        </div>
-
-                        {/* 나머지 정보들 */}
-                        <div className="row">
-                          <span className="label">ID:</span>
-                          <span className="value">{c.chgerId}</span>
-                        </div>
-                        <div className="row">
-                          <span className="label">타입:</span>
-                          <span className="value">{typeLabel}</span>
-                        </div>
-                        <div className="row">
-                          <span className="label">출력:</span>
-                          <span className="value">{c.output}kW</span>
-                        </div>
-                        <div className="row">
-                          <span className="label">
-                            {Number(c.stat) === 3
-                              ? "충전 시작:"
-                              : "마지막 충전 종료:"}
-                          </span>
-                          <span className="value">
-                            {Number(c.stat) === 3 && c.nowTsdt
-                              ? timeAgo(c.nowTsdt)
-                              : timeDiff}
-                          </span>
-                        </div>
-                      </li>
+              {/* 충전 가능 여부, 급속/완속 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 4,
+                }}
+              >
+                {/* 충전 가능 여부 */}
+                <span
+                  style={{ color: "#31ba81", fontWeight: 700, fontSize: 17 }}
+                >
+                  {(() => {
+                    const available = (selectedStation.chargers || []).some(
+                      (c) => Number(c.stat) === 2
                     );
-                  })}
-              </ul>
+                    return available ? "충전가능" : "이용불가";
+                  })()}
+                </span>
+                {/* 급속/완속 개수 */}
+                <span style={{ color: "#222", fontWeight: 500, fontSize: 16 }}>
+                  {(() => {
+                    const fast = (selectedStation.chargers || []).filter(
+                      (c) => Number(c.output) >= 50
+                    ).length;
+                    const slow = (selectedStation.chargers || []).filter(
+                      (c) => Number(c.output) < 50
+                    ).length;
+                    return `급속 ${fast}/${fast}  완속 ${slow}/${slow}`;
+                  })()}
+                </span>
+              </div>
 
+              {/* 주차료, 이용제한, 가격 간략버전 */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  margin: "6px 0 10px 0",
+                }}
+              >
+                {/* 출력(최대), 개방여부(임의), 주차료, 이용제한 */}
+                {(() => {
+                  const maxOutput = Math.max(
+                    ...(selectedStation.chargers || []).map(
+                      (c) => Number(c.output) || 0
+                    )
+                  );
+                  return (
+                    <span
+                      style={{
+                        background: "#f2f3f5",
+                        color: "#222",
+                        borderRadius: 16,
+                        padding: "5px 16px",
+                        fontSize: 15,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {maxOutput ? `${maxOutput}kW` : "출력정보없음"}
+                    </span>
+                  );
+                })()}
+                <span
+                  style={{
+                    background: "#f2f3f5",
+                    color: "#222",
+                    borderRadius: 16,
+                    padding: "5px 16px",
+                    fontSize: 15,
+                    fontWeight: 500,
+                  }}
+                >
+                  {selectedStation.parkingFree === "Y"
+                    ? "주차 무료"
+                    : selectedStation.parkingFree === "N"
+                    ? "주차 유료"
+                    : "주차료정보없음"}
+                </span>
+                {selectedStation.limitDetail && (
+                  <span
+                    style={{
+                      background: "#f2f3f5",
+                      color: "#222",
+                      borderRadius: 16,
+                      padding: "5px 16px",
+                      fontSize: 15,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {selectedStation.limitDetail}
+                  </span>
+                )}
+                {selectedStation.feeInfo &&
+                  selectedStation.feeInfo.fastMemberPrice && (
+                    <span
+                      style={{
+                        background: "#f2f3f5",
+                        color: "#222",
+                        borderRadius: 16,
+                        padding: "5px 16px",
+                        fontSize: 15,
+                        fontWeight: 500,
+                      }}
+                    >
+                      요금 {selectedStation.feeInfo.fastMemberPrice}원/kWh
+                    </span>
+                  )}
+              </div>
+
+              {/* 출발/도착/내비 버튼 */}
+              <div style={{ display: "flex", gap: 10, margin: "12px 0 0 0" }}>
+                <button
+                  onClick={handleSetOrigin}
+                  style={{
+                    flex: 1,
+                    background: "#fff",
+                    border: "1.5px solid #d0d0d0",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    padding: "10px 0",
+                    color: "#222",
+                    cursor: "pointer",
+                  }}
+                >
+                  출발
+                </button>
+                <button
+                  onClick={handleSetDest}
+                  style={{
+                    flex: 1,
+                    background: "#fff",
+                    border: "1.5px solid #d0d0d0",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    fontSize: 16,
+                    padding: "10px 0",
+                    color: "#222",
+                    cursor: "pointer",
+                  }}
+                >
+                  도착
+                </button>
+                <button
+                  style={{
+                    flex: 2,
+                    background: "#1976d2",
+                    border: "none",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    fontSize: 18,
+                    padding: "10px 0",
+                    color: "#fff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 22 }}>↗</span> 내비 연결
+                </button>
+              </div>
+
+              {/* 이하 기존 상세/슬라이드 구조 유지 */}
               {isPanelExpanded && (
-                <div className="extra-info">
-                  <h4>📍 상세 위치 정보</h4>
-                  <p>운영시간: {selectedStation.useTime || "정보 없음"}</p>
-                  <p>
-                    운영기관 연락처: {selectedStation.busiCall || "정보 없음"}
-                  </p>
-                  <p>
-                    주차료 :{" "}
-                    {selectedStation.parkingFree === "Y"
-                      ? "무료"
-                      : selectedStation.parkingFree === "N"
-                      ? "유료"
-                      : "정보 없음"}
-                  </p>
-                  <p>
-                    이용자 제한 : {selectedStation.limitDetail || "정보 없음"}
-                  </p>
-                  {/* 기타 표시할 정보들 추가 */}
+                <div
+                  className="extra-info"
+                  style={{
+                    padding: "0 0 12px 0",
+                    maxHeight: "55vh",
+                    overflowY: "auto",
+                  }}
+                >
+                  {/* 충전기 정보: 급속/완속 분류, 가로 카드 슬라이드 */}
+                  <div style={{ margin: "18px 0 10px 0" }}>
+                    <div
+                      style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}
+                    >
+                      충전기 정보
+                    </div>
+                    {/* 급속 카드 */}
+                    {(() => {
+                      const fastChargers = (
+                        selectedStation.chargers || []
+                      ).filter((c) => Number(c.output) >= 50);
+                      if (fastChargers.length > 0)
+                        return (
+                          <div style={{ marginBottom: 10 }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 15,
+                                margin: "0 0 6px 2px",
+                                color: "#1976d2",
+                              }}
+                            >
+                              급속
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 14,
+                                overflowX: "auto",
+                                paddingBottom: 4,
+                              }}
+                            >
+                              {fastChargers.map((c, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    minWidth: 180,
+                                    maxWidth: 210,
+                                    background: "#f7fafc",
+                                    border: "2px solid #b2e0f7",
+                                    borderRadius: 16,
+                                    padding: "14px 16px",
+                                    boxShadow:
+                                      "0 2px 8px rgba(25,118,210,0.08)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 7,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontWeight: 700,
+                                      fontSize: 16,
+                                      color: "#1976d2",
+                                    }}
+                                  >
+                                    {c.output}kW
+                                  </div>
+                                  <div style={{ fontSize: 14, color: "#555" }}>
+                                    {chargerTypeOptions.find(
+                                      (opt) => opt.code === c.chgerType
+                                    )?.label || c.chgerType}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontWeight: 600,
+                                      color:
+                                        Number(c.stat) === 2
+                                          ? "#31ba81"
+                                          : "#d73567",
+                                      fontSize: 15,
+                                    }}
+                                  >
+                                    {Number(c.stat) === 2
+                                      ? "충전가능"
+                                      : "이용불가"}
+                                  </div>
+                                  <div style={{ fontSize: 13, color: "#888" }}>
+                                    {c.lastTedt
+                                      ? timeAgo(c.lastTedt) + " 종료"
+                                      : ""}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                    })()}
+                    {/* 완속 카드 */}
+                    {(() => {
+                      const slowChargers = (
+                        selectedStation.chargers || []
+                      ).filter((c) => Number(c.output) < 50);
+                      if (slowChargers.length > 0)
+                        return (
+                          <div style={{ marginBottom: 10 }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 15,
+                                margin: "0 0 6px 2px",
+                                color: "#1976d2",
+                              }}
+                            >
+                              완속
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 14,
+                                overflowX: "auto",
+                                paddingBottom: 4,
+                              }}
+                            >
+                              {slowChargers.map((c, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    minWidth: 180,
+                                    maxWidth: 210,
+                                    background: "#f7fafc",
+                                    border: "2px solid #b2e0f7",
+                                    borderRadius: 16,
+                                    padding: "14px 16px",
+                                    boxShadow:
+                                      "0 2px 8px rgba(25,118,210,0.08)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 7,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontWeight: 700,
+                                      fontSize: 16,
+                                      color: "#1976d2",
+                                    }}
+                                  >
+                                    {c.output}kW
+                                  </div>
+                                  <div style={{ fontSize: 14, color: "#555" }}>
+                                    {chargerTypeOptions.find(
+                                      (opt) => opt.code === c.chgerType
+                                    )?.label || c.chgerType}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontWeight: 600,
+                                      color:
+                                        Number(c.stat) === 2
+                                          ? "#31ba81"
+                                          : "#d73567",
+                                      fontSize: 15,
+                                    }}
+                                  >
+                                    {Number(c.stat) === 2
+                                      ? "충전가능"
+                                      : "이용불가"}
+                                  </div>
+                                  <div style={{ fontSize: 13, color: "#888" }}>
+                                    {c.lastTedt
+                                      ? timeAgo(c.lastTedt) + " 종료"
+                                      : ""}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                    })()}
+                  </div>
+
+                  {/* 요금 정보란 */}
+                  <div
+                    style={{
+                      margin: "18px 0 0 0",
+                      padding: "18px 0 0 0",
+                      borderTop: "1.5px solid #e0e7ef",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 17,
+                        marginBottom: 10,
+                      }}
+                    >
+                      요금 정보
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+                      {/* 급속 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          급속
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.fastMemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          비회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.fastNonmemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                      </div>
+                      {/* 완속 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          완속
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.lowMemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          비회원가:{" "}
+                          <b>
+                            {selectedStation.feeInfo?.lowNonmemberPrice ??
+                              "정보없음"}
+                          </b>{" "}
+                          원/kWh
+                        </div>
+                      </div>
+                      {/* 로밍 */}
+                      <div
+                        style={{
+                          minWidth: 120,
+                          flex: 1,
+                          background: "#f7fafc",
+                          border: "2px solid #b2e0f7",
+                          borderRadius: 14,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                            fontSize: 15,
+                            marginBottom: 2,
+                          }}
+                        >
+                          로밍
+                        </div>
+                        <div style={{ fontSize: 14, color: "#222" }}>
+                          {selectedStation.roamingInfo
+                            ? selectedStation.roamingInfo
+                            : "로밍 요금 정보 없음"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* extra-info 내부 하단에 신고/제보, 리뷰쓰기 버튼 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      margin: "18px 0 0 0",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      style={{
+                        flex: 1,
+                        background: "#1976d2",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 20 }}>📢</span> 신고/제보
+                    </button>
+                    <button
+                      style={{
+                        flex: 1,
+                        background: "#fff",
+                        color: "#1976d2",
+                        border: "2px solid #b2e0f7",
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 20 }}>✏️</span> 리뷰 쓰기
+                    </button>
+                  </div>
                 </div>
               )}
-
-              <div className="station-info-buttons">
-                <button onClick={handleSetOrigin}>출발지</button>
-                <button onClick={handleSetDest}>도착지</button>
-              </div>
-              <button onClick={() => setSelectedStation(null)}>닫기</button>
             </>
           )}
         </motion.div>
         {showList && (
-          <div className="station-list-container">
+          <>
+            {/* 오버레이 */}
             <div
+              onClick={() => setShowList(false)}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.25)",
+                zIndex: 3400,
+                cursor: "pointer",
+                pointerEvents: showList ? "auto" : "none",
+                display: showList ? "block" : "none",
+              }}
+            />
+            <motion.div
+              className="station-list-motion-container"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{
+                position: "fixed",
+                top: 0,
+                right: 0,
+                height: "100vh",
+                width: "85vw",
+                maxWidth: 420,
+                background: "#fff",
+                zIndex: 3500,
+                boxShadow: "-2px 0 10px rgba(0,0,0,0.10)",
+                overflowY: "auto",
+                padding: "24px 18px 32px 18px",
+                borderRadius: "24px 0 0 24px",
+                pointerEvents: showList ? "auto" : "none",
+                display: showList ? "block" : "none",
               }}
             >
-              <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
-              <button
-                onClick={() => setShowList(false)}
+              <div
                 style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "20px",
-                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
-                title="닫기"
-              ></button>
-            </div>
-            <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-              {stations.map((st, idx) => (
-                <li
-                  key={st.statId + idx}
-                  className="station-item"
+              >
+                <h3 style={{ margin: 0 }}>추천 충전소 리스트</h3>
+                <button
+                  onClick={() => setShowList(false)}
                   style={{
-                    marginBottom: "12px",
-                    borderBottom: "1px solid #eee",
-                    paddingBottom: "8px",
+                    background: "none",
+                    border: "none",
+                    fontSize: "20px",
+                    cursor: "pointer",
                   }}
+                  title="닫기"
                 >
-                  <strong>{st.statNm}</strong> ({st.bnm})<br />
-                  {st.addr}
-                  <br />
-                  점수: {st.recommendScore}
-                </li>
-              ))}
-            </ul>
-          </div>
+                  ✕
+                </button>
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+                {stations.map((st, idx) => (
+                  <li
+                    key={st.statId + idx}
+                    className="station-item"
+                    style={{
+                      marginBottom: "12px",
+                      borderBottom: "1px solid #eee",
+                      paddingBottom: "8px",
+                    }}
+                  >
+                    <strong>{st.statNm}</strong> ({st.bnm})<br />
+                    {st.addr}
+                    <br />
+                    점수: {st.recommendScore}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </>
         )}
         {/* 3. 사이드 드로어 */}
         {showDrawer && (
@@ -2288,23 +2865,7 @@ export default function Home() {
           </button>
           <button
             style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              fontSize: 15,
-              color: "#222",
-              cursor: "pointer",
-            }}
-            onClick={() => setActiveMenu("favorite")}
-          >
-            <span style={{ fontSize: 22, marginBottom: 2 }}>⭐</span>
-            즐겨찾기
-          </button>
-          <button
-            style={{
-              background: "#31ba81",
+              background: "#1976d2",
               border: "none",
               borderRadius: 12,
               color: "white",
@@ -2319,8 +2880,26 @@ export default function Home() {
             }}
             onClick={handleRecommendClick}
           >
-            <span style={{ fontSize: 22, marginBottom: 2 }}>🚗</span>
+            <span style={{ fontSize: 22, marginBottom: 2 }}>
+              <FontAwesomeIcon icon={faWaveSquare} />
+            </span>
             경로추천
+          </button>
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 15,
+              color: "#222",
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveMenu("favorite")}
+          >
+            <span style={{ fontSize: 22, marginBottom: 2 }}>☆</span>
+            즐겨찾기
           </button>
         </div>
       </div>
