@@ -78,23 +78,23 @@ if (!Array.isArray(markersRef.current)) {
     const existingStatIds = markersRef.current.map((entry) =>
   entry.data.statId?.toString()
 );
+/////////////////최저가/////////
+let cheapestStationIds = [];
 
-const feeMap = new Map();
+if (stations.length > 0) {
+  const stationsWithValidPrice = stations.filter(s =>
+    typeof s.fastMemberPrice === "number" && !isNaN(s.fastMemberPrice)
+  );
 
-await Promise.all(
-  stations.map(async (station) => {
-    if (!station.busiId) return;
-    if (feeMap.has(station.busiId)) return;
+  if (stationsWithValidPrice.length > 0) {
+    const minPrice = Math.min(...stationsWithValidPrice.map(s => s.fastMemberPrice));
 
-    try {
-      const fee = await fetchChargerFee(station.busiId);
-      feeMap.set(station.busiId, fee);
-    } catch (e) {
-      console.warn(`요금 조회 실패: ${station.busiId}`, e);
-      feeMap.set(station.busiId, "정보 없음");
-    }
-  })
-);
+    cheapestStationIds = stationsWithValidPrice
+      .filter(s => s.fastMemberPrice === minPrice)
+      .map(s => s.statId?.toString());
+  }
+}
+//////////////////////////////////////////////////////////
     // 버전 1. 새 마커 찍기+   // 새 마커 찍기
     stations.forEach((station) => {
       const statIdStr = station.statId?.toString();
@@ -110,36 +110,60 @@ await Promise.all(
       );
       if (exists) return;
       
-
-       const baseFee = feeMap.get(station.busiId) ?? "정보 없음";
-       const fastMemberPrice = baseFee?.fastMemberPrice ?? "정보 없음";
-      const position = new window.Tmapv2.LatLng(station.lat, station.lng);
-      const labelHtml = `
- <div style="
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #fefefe;
-    border-radius: 10px;
-    padding: 4px 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #1e1e1e;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    border: 1px solid #ddd;
-    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-    line-height: 1;
-    white-space: nowrap;
+const isCheapest = cheapestStationIds.includes(statIdStr);
+const fastMemberPrice = station.fastMemberPrice ?? "정보 없음";
+const position = new window.Tmapv2.LatLng(station.lat, station.lng);
+const labelHtml = `
+  <div style="
+    position: relative;
+    display: inline-block;
   ">
-    <img src="${station.logoUrl}" style="
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
-      object-fit: cover;
-    " />
-    <span>
-      ${fastMemberPrice}<span style="font-size: 11px; color: #888;">원</span>
-    </span>
+    ${isCheapest ? `
+      <div style="
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff3e0;
+        color: #e64a19;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 6px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        white-space: nowrap;
+      ">
+        🔥 최저가
+      </div>
+    ` : ""}
+
+    <div style="
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fefefe;
+      border-radius: 10px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1e1e1e;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      line-height: 1;
+      white-space: nowrap;
+    ">
+      <img src="${station.logoUrl}" style="
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        object-fit: cover;
+      " />
+      <span>
+        ${fastMemberPrice}<span style="font-size: 11px; color: #888;">원</span>
+      </span>
+    </div>
   </div>
 `;
     const marker = new window.Tmapv2.Marker({

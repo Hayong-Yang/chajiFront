@@ -1,9 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { handleZoomChange } from "../api/zoom";
+import {
+  faUser,
+  faComments,
+  faHeadset,
+  faCog,
+} from "@fortawesome/free-solid-svg-icons";
+import { getUserInfo, logoutUser } from "../api/member";
 
 import {
   setStationNear,
@@ -350,6 +357,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 }
 
 export default function Home() {
+  const [loading, setLoading] = useState(true); // 지도 로딩중 상태
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [memberCompany, setMemberCompany] = useState("ME");
@@ -359,7 +367,7 @@ export default function Home() {
   const [stations, setStations] = useState([]); // 충전소 리스트
   const [showList, setShowList] = useState(false); // 리스트 뷰 토글
   const [showDrawer, setShowDrawer] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("home"); // 선택된 메뉴
+  const [activeMenu, setActiveMenu] = useState("mypage"); // 선택된 메뉴
   const [suggestions, setSuggestions] = useState([]);
   const [query, setQuery] = useState("");
 
@@ -384,6 +392,28 @@ export default function Home() {
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
   const zoomMarkers = useRef([]);
+  const [user, setUser] = useState(null);
+  const token = useMemo(() => localStorage.getItem("accessToken"), []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    getUserInfo(token)
+      .then((res) => setUser(res))
+      .catch((err) => console.warn("사용자 정보를 불러오지 못했습니다.", err));
+  }, [token]);
+
+  const handleRegister = () => navigate("/register");
+  const handleLogin = () => navigate("/login");
+
+  const handleProtectedClick = (path) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요해요! 🐾");
+      return;
+    }
+    navigate(path);
+  };
 
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
@@ -530,6 +560,7 @@ export default function Home() {
     }
   }, []);
 
+  
   // 리스트보기 핸들러
   const handleShowList = async () => {
     if (showList) {
@@ -546,7 +577,27 @@ export default function Home() {
     setStations(list);
     setShowList(true);
   };
+//충전소 리스트 클릭시
+  const handleStationClick = (station) => {
+  const marker = markersRef.current.find(
+    (m) => m.data?.statId?.toString() === station.statId?.toString()
+  );
 
+  if (marker) {
+    window.Tmapv2.event.trigger(marker, "click");
+
+    const map = mapInstance.current;
+    if (map) {
+      const pos = new window.Tmapv2.LatLng(station.lat, station.lng);
+      map.setCenter(pos);
+      map.setZoom(17);
+    }
+    setShowList(false);
+    setSelectedStation(station);
+  } else {
+    console.warn("❗ 마커를 찾을 수 없습니다:", station.statId);
+  }
+};
   // === inline 필터 적용 함수 ===
   const applyFiltersInline = async (options) => {
     await setStationNear(centerLatRef.current, centerLonRef.current);
@@ -638,6 +689,10 @@ export default function Home() {
       destMarkerRef,
       memberCompanyRef
     );
+    onMapReady(); // 마커 다 그려진 후
+    setTimeout(() => {
+      setLoading(false); // 물개 퇴장!
+    }, 4000); // 단위: ms (여기선 1초)
 
     console.log("전송할 필터옵션:", filterOptions);
 
@@ -670,6 +725,7 @@ export default function Home() {
     );
     setTimeout(() => {
       onMapReady(); // mapInstance.current 확실히 존재할 시점
+      // setLoading(false); // 로딩 완료
     }, 0);
   };
 
@@ -1136,6 +1192,18 @@ export default function Home() {
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
+      {loading && (
+        <div className="splash-screen">
+          <img
+            src="/img/seal-driver.png"
+            alt="차지차지 시작!"
+            className="seal-icon"
+          />
+          <h1 className="splash-title">차지차지!</h1>
+          <p className="splash-subtitle">전기차 라이프의 시작을 함께해요 ⚡</p>
+        </div>
+      )}
+
       {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
       <div
         className="search-fixed-container"
@@ -2695,24 +2763,35 @@ export default function Home() {
                   ✕
                 </button>
               </div>
-              <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-                {stations.map((st, idx) => (
-                  <li
-                    key={st.statId + idx}
-                    className="station-item"
-                    style={{
-                      marginBottom: "12px",
-                      borderBottom: "1px solid #eee",
-                      paddingBottom: "8px",
-                    }}
-                  >
-                    <strong>{st.statNm}</strong> ({st.bnm})<br />
-                    {st.addr}
-                    <br />
-                    점수: {st.recommendScore}
-                  </li>
-                ))}
-              </ul>
+ <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+  {stations.map((st, idx) => (
+    <li
+      key={st.statId + idx}
+      className="station-item"
+      style={{
+        marginBottom: "12px",
+        borderBottom: "1px solid #eee",
+        paddingBottom: "8px",
+      }}
+    >
+      <div
+        onClick={() => handleStationClick(st)}
+        style={{
+          cursor: "pointer",
+          padding: "6px 4px",
+          borderRadius: "6px",
+          transition: "background 0.2s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "#f9f9f9"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+      >
+        <strong>{st.statNm}</strong> <span style={{ fontSize: "13px", color: "#888" }}>({st.bnm})</span><br />
+        <span style={{ fontSize: "14px" }}>{st.addr}</span><br />
+        <span style={{ fontSize: "13px", color: "#666" }}>점수: {st.recommendScore}</span>
+      </div>
+    </li>
+  ))}
+</ul>
             </motion.div>
           </>
         )}
@@ -2745,40 +2824,99 @@ export default function Home() {
                   alt="프로필"
                   className="profile-image"
                 />
-                <div className="login-links">회원가입 | 로그인</div>
+                <div className="login-links">
+                  {user ? (
+                    <div className="user-info-row">
+                      <div className="user-name">{user.userName} 님</div>
+                      <button
+                        className="logout-button"
+                        onClick={() => {
+                          localStorage.removeItem("accessToken");
+                          setUser(null);
+                          window.location.reload();
+                        }}
+                      >
+                        로그아웃
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="login-buttons-row">
+                        <button
+                          className="login-button"
+                          onClick={handleRegister}
+                        >
+                          회원가입
+                        </button>
+                        <span className="divider">|</span>
+                        <button className="login-button" onClick={handleLogin}>
+                          로그인
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="drawer-welcome">
-                차지차지와 함께 행복한 하루 보내세요!
-              </div>
+              <div className="drawer-welcome">오늘도 차지차지와 함께 😊</div>
 
               {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
               <div className="drawer-body">
                 <div className="icon-column">
                   <div onClick={() => setActiveMenu("mypage")}>
-                    <img src="/img/icon-profile.png" alt="마이페이지" />
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className={`menu-icon ${
+                        activeMenu === "mypage" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("community")}>
-                    <img src="/img/icon-community.png" alt="커뮤니티" />
+                    <FontAwesomeIcon
+                      icon={faComments}
+                      className={`menu-icon ${
+                        activeMenu === "community" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("support")}>
-                    <img src="/img/icon-support.png" alt="고객센터" />
+                    <FontAwesomeIcon
+                      icon={faHeadset}
+                      className={`menu-icon ${
+                        activeMenu === "support" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("settings")}>
-                    <img src="/img/icon-settings.png" alt="설정" />
+                    <FontAwesomeIcon
+                      icon={faCog}
+                      className={`menu-icon ${
+                        activeMenu === "settings" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                 </div>
 
                 <div className="text-column">
                   {activeMenu === "mypage" && (
                     <div className="text-list">
-                      <div className="text-item">내 활동</div>
+                      <div
+                        className="text-item"
+                        onClick={() => handleProtectedClick("/mypage")}
+                      >
+                        MyPage
+                      </div>
                       <div className="text-item">내가 쓴 글 보기</div>
                       <div className="text-item">충전소 제보 내역</div>
                     </div>
                   )}
                   {activeMenu === "community" && (
                     <div className="text-list">
-                      <div className="text-item">자유게시판</div>
+                      <div
+                        className="text-item"
+                        onClick={() => navigate("/community")}
+                      >
+                        커뮤니티
+                      </div>
                       <div className="text-item">정보공유</div>
                     </div>
                   )}
@@ -2799,6 +2937,7 @@ export default function Home() {
             </div>
           </>
         )}
+
         <button
           className="current-location-button"
           onClick={moveToCurrentLocation}
@@ -2848,7 +2987,7 @@ export default function Home() {
               color: "#222",
               cursor: "pointer",
             }}
-            onClick={() => setActiveMenu("community")}
+            onClick={() => navigate("/community")}
           >
             <span style={{ fontSize: 22, marginBottom: 2 }}>💬</span>
             커뮤니티
