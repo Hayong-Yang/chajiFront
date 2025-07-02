@@ -46,12 +46,17 @@ export async function handleZoomChange(
   const lng = center.lng();
   const requestId = ++currentRequestId;
 
+  clearMarkers(detailedMarkers);
+  detailedMarkers = [];
+  clearMarkers(summaryZscodeMarkers);
+  summaryZscodeMarkers = [];
+  clearMarkers(summaryZcodeMarkers);
+  summaryZcodeMarkers = [];
+
   if (zoom >= 14) {
     console.log("🔎 상세 마커 표시 (zoom >= 14)");
-    clearMarkers(summaryZscodeMarkers);
-    summaryZscodeMarkers = [];
-    clearMarkers(summaryZcodeMarkers);
-    summaryZcodeMarkers = [];
+
+
 
     await getStationNear(
       lat, lng, mapInstance, markersRef,
@@ -68,10 +73,7 @@ export async function handleZoomChange(
 
   else if (zoom >= 11 && zoom <= 13) {
     console.log("📍 Zscode 요약 마커 표시 (zoom 11~13)");
-    clearMarkers(detailedMarkers);
-    detailedMarkers = [];
-    clearMarkers(summaryZcodeMarkers);
-    summaryZcodeMarkers = [];
+
 
     const response = await axios.get("/api/zoom", {
       params: { lat, lng, zoomLevel: zoom }
@@ -86,10 +88,6 @@ export async function handleZoomChange(
 
   else if (zoom <= 10) {
     console.log("📍 Zcode 요약 마커 표시 (zoom <= 10)");
-    clearMarkers(detailedMarkers);
-    detailedMarkers = [];
-    clearMarkers(summaryZscodeMarkers);
-    summaryZscodeMarkers = [];
 
     const response = await axios.get("/api/zoom", {
       params: { lat, lng, zoomLevel: zoom }
@@ -115,19 +113,26 @@ function createLabelMarker(map) {
     if (!lat || !lng || lng === 0) return null;
 
     const position = new window.Tmapv2.LatLng(lat, lng);
+const size = Math.min(80, Math.max(40, Math.sqrt(count) * 0.6));
+const fontSize = size * 0.28;
+const lineHeight = fontSize * 1.2;
     const labelHtml = `
       <div style="
         background: white;
-        border: 2px solid red;
-        border-radius: 16px;
+        width: ${size*2}px;
+        height: ${size*2}px;
+        border: 2px solid #1976D2;
+        border-radius: 50%;
         padding: 4px 8px;
-        font-size: 13px;
+        line-height: ${lineHeight}px;
+      font-size: ${fontSize}px;
         font-weight: bold;
-        color: red;
+        color: black;
         white-space: nowrap;
         box-shadow: 2px 2px 3px rgba(0,0,0,0.3);
       ">
-        ${name}<br/>(${count}개)
+    <div style="line-height: 1; margin-top: 20px;">${name}</div>
+    <div style="line-height: 1; margin-top: 10px;">(${count}개)</div>
       </div>
     `;
 
