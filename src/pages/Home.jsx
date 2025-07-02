@@ -334,7 +334,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
         placeholder={`차지차지! 장소를 검색해보세요!`}
         autoComplete="off"
         onFocus={() => {
-          if (suggestions.length > 0) setShowList(true);
+          if (suggestions.length > 2) setShowList(true);
            setUserFocused(true);
         }}
         className="autocomplete-input"
@@ -582,7 +582,9 @@ export default function Home() {
       centerLatRef.current,
       centerLonRef.current
     );
-    setStations(list);
+      const top5 = list.slice(0, 5); // 🔥 상위 5개만 자르기
+    setStations(top5); 
+    // setStations(list);
     setShowList(true);
   };
 //충전소 리스트 클릭시
