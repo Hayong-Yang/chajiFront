@@ -290,6 +290,8 @@ async function fetchStationList(filterOptions, lat, lon) {
 function AutocompleteInput({ label, value = "", onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
+  const [userFocused, setUserFocused] = useState(false);  //사용자가 input을 직접 선택했는지 여부
+
 
   const timeoutRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -305,7 +307,9 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
       const data = await fetchAutocomplete(value.trim());
       console.log("자동완성 결과:", data);
       setSuggestions(data);
+       if (userFocused) {
       setShowList(true);
+    }
     }, 300);
   }, [value]);
 
@@ -313,6 +317,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setShowList(false);
+         setUserFocused(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -329,7 +334,8 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
         placeholder={`차지차지! 장소를 검색해보세요!`}
         autoComplete="off"
         onFocus={() => {
-          if (suggestions.length > 0) setShowList(true);
+          if (suggestions.length > 2) setShowList(true);
+           setUserFocused(true);
         }}
         className="autocomplete-input"
       />
@@ -341,6 +347,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
               onClick={() => {
                 onSelect(item);
                 setShowList(false);
+                 setUserFocused(false);
                 setSuggestions([]);
               }}
               className="autocomplete-item"
@@ -362,6 +369,7 @@ export default function Home() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [memberCompany, setMemberCompany] = useState("ME");
   const memberCompanyRef = useRef("ME"); // ⬅️ 추가
+  const [userFocused, setUserFocused] = useState(false); 
 
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
@@ -574,7 +582,9 @@ export default function Home() {
       centerLatRef.current,
       centerLonRef.current
     );
-    setStations(list);
+      const top5 = list.slice(0, 5); // 🔥 상위 5개만 자르기
+    setStations(top5); 
+    // setStations(list);
     setShowList(true);
   };
 //충전소 리스트 클릭시
@@ -781,6 +791,7 @@ export default function Home() {
       map.setZoom(15);
       // setOrigin(meta); // 필요 시 위치 상태 저장
     }
+    setUserFocused(false)
   };
   const handleDestSelect = (item) => {
     const meta = getStationMeta(normalizeCoords(item));
@@ -793,6 +804,7 @@ export default function Home() {
       map.setZoom(15);
     }
     // setDest(meta); // 필요 시 위치 상태 저장
+    setUserFocused(false)
   };
 
   // 스왑함수
@@ -815,7 +827,7 @@ export default function Home() {
     const newOriginMarker = new window.Tmapv2.Marker({
       position: destPos,
       map,
-      icon: "/img/logos/start.png",
+      icon: "/img/pointer/redMarker.png",
       iconSize: new window.Tmapv2.Size(36, 54),
       iconAnchor: new window.Tmapv2.Point(18, 54),
     });
@@ -824,7 +836,7 @@ export default function Home() {
     const newDestMarker = new window.Tmapv2.Marker({
       position: originPos,
       map,
-      icon: "/img/logos/end.png",
+      icon: "/img/pointer/redMarker.png",
       iconSize: new window.Tmapv2.Size(36, 54),
       iconAnchor: new window.Tmapv2.Point(18, 54),
     });
@@ -858,14 +870,25 @@ export default function Home() {
     );
 
     // === 이전 출발지 마커 복원 ===
-    if (originMarkerRef.current) {
-      if (originMarkerRef.current.originalIcon) {
-        originMarkerRef.current.setIcon(originMarkerRef.current.originalIcon);
-      } else {
-        originMarkerRef.current.setMap(null);
+if (originMarkerRef.current) {
+  const prev = originMarkerRef.current;
+    const el = prev.getElement?.();
+    if (el) {
+      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+      if (wrapper) {
+        wrapper.style.outline = "";
+        wrapper.style.borderRadius = "";
       }
-      originMarkerRef.current = null;
     }
+  if (prev.originalIcon === "html") {
+    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+  } else if (prev.originalIcon) {
+    prev.setIcon(prev.originalIcon);  // 아이콘 복원
+  } else {
+    prev.setMap(null);
+  }
+  originMarkerRef.current = null;
+}
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -885,18 +908,29 @@ export default function Home() {
     if (targetMarker) {
       // 아이콘 백업하고 출발지 아이콘으로 변경
       targetMarker.originalIcon = targetMarker.getIcon();
-      targetMarker.setIcon("/img/logos/start.png");
+      targetMarker.setIcon("/img/pointer/redMarker.png");
       originMarkerRef.current = targetMarker;
+          // ✅ HTML 기반 마커라면 강조 스타일 적용
+const el = targetMarker.getElement?.();
+if (el) {
+  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
+  if (wrapper) {
+    wrapper.style.outline = "3px solid #1976D2";
+    wrapper.style.borderRadius = "12px";
+  }
+}
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
         position,
         map: mapInstance.current,
-        icon: "/img/logos/start.png",
+        icon: "/img/pointer/redMarker.png",
         iconAnchor: new Tmapv2.Point(18, 48),
       });
+      marker.dataStatId = selectedStation.statId;
       originMarkerRef.current = marker;
     }
+
 
     // === 출발지 상태 반영 ===
     setOriginInput(
@@ -905,6 +939,8 @@ export default function Home() {
         selectedStation.addr ||
         ""
     );
+ 
+   setSelectedStation(null); 
     setMode("route");
   };
   const handleSetDest = () => {
@@ -934,13 +970,25 @@ export default function Home() {
 
     // === 이전 출발지 마커 복원 ===
     if (destMarkerRef.current) {
-      if (destMarkerRef.current.destIcon) {
-        destMarkerRef.current.setIcon(destMarkerRef.current.destIcon);
-      } else {
-        originMarkerRef.current.setMap(null);
+  const prev = destMarkerRef.current;
+    const el = prev.getElement?.();
+    if (el) {
+      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+      if (wrapper) {
+        wrapper.style.outline = "";
+        wrapper.style.borderRadius = "";
       }
-      destMarkerRef.current = null;
     }
+  if (prev.destlIcon === "html") {
+    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+  } else if (prev.destlIcon) {
+    prev.setIcon(prev.destIcon);  // 아이콘 복원
+  } else {
+    prev.setMap(null);
+  }
+  destMarkerRef.current = null;
+}
+
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -960,16 +1008,25 @@ export default function Home() {
     if (targetMarker) {
       // 아이콘 백업하고 출발지 아이콘으로 변경
       targetMarker.destIcon = targetMarker.getIcon();
-      targetMarker.setIcon("/img/logos/end.png");
+      targetMarker.setIcon("/img/pointer/redMarker.png");
       destMarkerRef.current = targetMarker;
+      const el = targetMarker.getElement?.();
+if (el) {
+  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
+  if (wrapper) {
+    wrapper.style.outline = "3px solid #1976D2";
+    wrapper.style.borderRadius = "12px";
+  }
+}
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
         position,
         map: mapInstance.current,
-        icon: "/img/logos/end.png",
+        icon: "/img/pointer/redMarker.png",
         iconAnchor: new Tmapv2.Point(18, 48),
       });
+      marker.dataStatId = selectedStation.statId;
       destMarkerRef.current = marker;
     }
 
@@ -980,6 +1037,7 @@ export default function Home() {
         selectedStation.addr ||
         ""
     );
+    setSelectedStation(null); 
     setMode("route");
   };
 
