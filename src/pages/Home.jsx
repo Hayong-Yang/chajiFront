@@ -290,8 +290,7 @@ async function fetchStationList(filterOptions, lat, lon) {
 function AutocompleteInput({ label, value = "", onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
-  const [userFocused, setUserFocused] = useState(false);  //사용자가 input을 직접 선택했는지 여부
-
+  const [userFocused, setUserFocused] = useState(false); //사용자가 input을 직접 선택했는지 여부
 
   const timeoutRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -307,9 +306,9 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
       const data = await fetchAutocomplete(value.trim());
       console.log("자동완성 결과:", data);
       setSuggestions(data);
-       if (userFocused) {
-      setShowList(true);
-    }
+      if (userFocused) {
+        setShowList(true);
+      }
     }, 300);
   }, [value]);
 
@@ -317,7 +316,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setShowList(false);
-         setUserFocused(false);
+        setUserFocused(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -335,7 +334,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
         autoComplete="off"
         onFocus={() => {
           if (suggestions.length > 2) setShowList(true);
-           setUserFocused(true);
+          setUserFocused(true);
         }}
         className="autocomplete-input"
       />
@@ -347,7 +346,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
               onClick={() => {
                 onSelect(item);
                 setShowList(false);
-                 setUserFocused(false);
+                setUserFocused(false);
                 setSuggestions([]);
               }}
               className="autocomplete-item"
@@ -369,7 +368,7 @@ export default function Home() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [memberCompany, setMemberCompany] = useState("ME");
   const memberCompanyRef = useRef("ME"); // ⬅️ 추가
-  const [userFocused, setUserFocused] = useState(false); 
+  const [userFocused, setUserFocused] = useState(false);
 
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
@@ -438,7 +437,7 @@ export default function Home() {
     if (!activeDropdown) return;
     function handleClickOutside(e) {
       // 드롭다운 영역 내 클릭이면 무시
-      const dropdowns = document.querySelectorAll(".dropdown");
+      const dropdowns = document.querySelectorAll(".dropdown, .filter-panel");
       for (let i = 0; i < dropdowns.length; i++) {
         if (dropdowns[i].contains(e.target)) return;
       }
@@ -568,7 +567,6 @@ export default function Home() {
     }
   }, []);
 
-  
   // 리스트보기 핸들러
   const handleShowList = async () => {
     if (showList) {
@@ -582,32 +580,32 @@ export default function Home() {
       centerLatRef.current,
       centerLonRef.current
     );
-      const top5 = list.slice(0, 5); // 🔥 상위 5개만 자르기
-    setStations(top5); 
+    const top5 = list.slice(0, 5); // 🔥 상위 5개만 자르기
+    setStations(top5);
     // setStations(list);
     setShowList(true);
   };
-//충전소 리스트 클릭시
+  //충전소 리스트 클릭시
   const handleStationClick = (station) => {
-  const marker = markersRef.current.find(
-    (m) => m.data?.statId?.toString() === station.statId?.toString()
-  );
+    const marker = markersRef.current.find(
+      (m) => m.data?.statId?.toString() === station.statId?.toString()
+    );
 
-  if (marker) {
-    window.Tmapv2.event.trigger(marker, "click");
+    if (marker) {
+      window.Tmapv2.event.trigger(marker, "click");
 
-    const map = mapInstance.current;
-    if (map) {
-      const pos = new window.Tmapv2.LatLng(station.lat, station.lng);
-      map.setCenter(pos);
-      map.setZoom(17);
+      const map = mapInstance.current;
+      if (map) {
+        const pos = new window.Tmapv2.LatLng(station.lat, station.lng);
+        map.setCenter(pos);
+        map.setZoom(17);
+      }
+      setShowList(false);
+      setSelectedStation(station);
+    } else {
+      console.warn("❗ 마커를 찾을 수 없습니다:", station.statId);
     }
-    setShowList(false);
-    setSelectedStation(station);
-  } else {
-    console.warn("❗ 마커를 찾을 수 없습니다:", station.statId);
-  }
-};
+  };
   // === inline 필터 적용 함수 ===
   const applyFiltersInline = async (options) => {
     await setStationNear(centerLatRef.current, centerLonRef.current);
@@ -791,7 +789,7 @@ export default function Home() {
       map.setZoom(15);
       // setOrigin(meta); // 필요 시 위치 상태 저장
     }
-    setUserFocused(false)
+    setUserFocused(false);
   };
   const handleDestSelect = (item) => {
     const meta = getStationMeta(normalizeCoords(item));
@@ -804,7 +802,7 @@ export default function Home() {
       map.setZoom(15);
     }
     // setDest(meta); // 필요 시 위치 상태 저장
-    setUserFocused(false)
+    setUserFocused(false);
   };
 
   // 스왑함수
@@ -870,25 +868,25 @@ export default function Home() {
     );
 
     // === 이전 출발지 마커 복원 ===
-if (originMarkerRef.current) {
-  const prev = originMarkerRef.current;
-    const el = prev.getElement?.();
-    if (el) {
-      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
-      if (wrapper) {
-        wrapper.style.outline = "";
-        wrapper.style.borderRadius = "";
+    if (originMarkerRef.current) {
+      const prev = originMarkerRef.current;
+      const el = prev.getElement?.();
+      if (el) {
+        const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+        if (wrapper) {
+          wrapper.style.outline = "";
+          wrapper.style.borderRadius = "";
+        }
       }
+      if (prev.originalIcon === "html") {
+        prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+      } else if (prev.originalIcon) {
+        prev.setIcon(prev.originalIcon); // 아이콘 복원
+      } else {
+        prev.setMap(null);
+      }
+      originMarkerRef.current = null;
     }
-  if (prev.originalIcon === "html") {
-    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
-  } else if (prev.originalIcon) {
-    prev.setIcon(prev.originalIcon);  // 아이콘 복원
-  } else {
-    prev.setMap(null);
-  }
-  originMarkerRef.current = null;
-}
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -910,15 +908,15 @@ if (originMarkerRef.current) {
       targetMarker.originalIcon = targetMarker.getIcon();
       targetMarker.setIcon("/img/pointer/redMarker.png");
       originMarkerRef.current = targetMarker;
-          // ✅ HTML 기반 마커라면 강조 스타일 적용
-const el = targetMarker.getElement?.();
-if (el) {
-  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
-  if (wrapper) {
-    wrapper.style.outline = "3px solid #1976D2";
-    wrapper.style.borderRadius = "12px";
-  }
-}
+      // ✅ HTML 기반 마커라면 강조 스타일 적용
+      const el = targetMarker.getElement?.();
+      if (el) {
+        const wrapper = el.querySelector("div"); // 가장 바깥 div 선택
+        if (wrapper) {
+          wrapper.style.outline = "3px solid #1976D2";
+          wrapper.style.borderRadius = "12px";
+        }
+      }
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
@@ -931,7 +929,6 @@ if (el) {
       originMarkerRef.current = marker;
     }
 
-
     // === 출발지 상태 반영 ===
     setOriginInput(
       selectedStation.statNm ||
@@ -939,8 +936,8 @@ if (el) {
         selectedStation.addr ||
         ""
     );
- 
-   setSelectedStation(null); 
+
+    setSelectedStation(null);
     setMode("route");
   };
   const handleSetDest = () => {
@@ -970,25 +967,24 @@ if (el) {
 
     // === 이전 출발지 마커 복원 ===
     if (destMarkerRef.current) {
-  const prev = destMarkerRef.current;
-    const el = prev.getElement?.();
-    if (el) {
-      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
-      if (wrapper) {
-        wrapper.style.outline = "";
-        wrapper.style.borderRadius = "";
+      const prev = destMarkerRef.current;
+      const el = prev.getElement?.();
+      if (el) {
+        const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+        if (wrapper) {
+          wrapper.style.outline = "";
+          wrapper.style.borderRadius = "";
+        }
       }
+      if (prev.destlIcon === "html") {
+        prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+      } else if (prev.destlIcon) {
+        prev.setIcon(prev.destIcon); // 아이콘 복원
+      } else {
+        prev.setMap(null);
+      }
+      destMarkerRef.current = null;
     }
-  if (prev.destlIcon === "html") {
-    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
-  } else if (prev.destlIcon) {
-    prev.setIcon(prev.destIcon);  // 아이콘 복원
-  } else {
-    prev.setMap(null);
-  }
-  destMarkerRef.current = null;
-}
-
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -1011,13 +1007,13 @@ if (el) {
       targetMarker.setIcon("/img/pointer/redMarker.png");
       destMarkerRef.current = targetMarker;
       const el = targetMarker.getElement?.();
-if (el) {
-  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
-  if (wrapper) {
-    wrapper.style.outline = "3px solid #1976D2";
-    wrapper.style.borderRadius = "12px";
-  }
-}
+      if (el) {
+        const wrapper = el.querySelector("div"); // 가장 바깥 div 선택
+        if (wrapper) {
+          wrapper.style.outline = "3px solid #1976D2";
+          wrapper.style.borderRadius = "12px";
+        }
+      }
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
@@ -1037,7 +1033,7 @@ if (el) {
         selectedStation.addr ||
         ""
     );
-    setSelectedStation(null); 
+    setSelectedStation(null);
     setMode("route");
   };
 
@@ -1171,7 +1167,7 @@ if (el) {
       setIsFavorite((prev) => !prev);
     } catch (err) {
       console.error("즐겨찾기 처리 중 오류:", err);
-      alert("즐겨찾기 처리 중 문제가 발생했습니다.");
+      alert("즐겨찾기는 로그인 이후에 가능해요!");
     }
   };
 
@@ -2821,35 +2817,46 @@ if (el) {
                   ✕
                 </button>
               </div>
- <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
-  {stations.map((st, idx) => (
-    <li
-      key={st.statId + idx}
-      className="station-item"
-      style={{
-        marginBottom: "12px",
-        borderBottom: "1px solid #eee",
-        paddingBottom: "8px",
-      }}
-    >
-      <div
-        onClick={() => handleStationClick(st)}
-        style={{
-          cursor: "pointer",
-          padding: "6px 4px",
-          borderRadius: "6px",
-          transition: "background 0.2s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "#f9f9f9"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-      >
-        <strong>{st.statNm}</strong> <span style={{ fontSize: "13px", color: "#888" }}>({st.bnm})</span><br />
-        <span style={{ fontSize: "14px" }}>{st.addr}</span><br />
-        <span style={{ fontSize: "13px", color: "#666" }}>점수: {st.recommendScore}</span>
-      </div>
-    </li>
-  ))}
-</ul>
+              <ul style={{ listStyle: "none", padding: 0, marginTop: 8 }}>
+                {stations.map((st, idx) => (
+                  <li
+                    key={st.statId + idx}
+                    className="station-item"
+                    style={{
+                      marginBottom: "12px",
+                      borderBottom: "1px solid #eee",
+                      paddingBottom: "8px",
+                    }}
+                  >
+                    <div
+                      onClick={() => handleStationClick(st)}
+                      style={{
+                        cursor: "pointer",
+                        padding: "6px 4px",
+                        borderRadius: "6px",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = "#f9f9f9")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = "transparent")
+                      }
+                    >
+                      <strong>{st.statNm}</strong>{" "}
+                      <span style={{ fontSize: "13px", color: "#888" }}>
+                        ({st.bnm})
+                      </span>
+                      <br />
+                      <span style={{ fontSize: "14px" }}>{st.addr}</span>
+                      <br />
+                      <span style={{ fontSize: "13px", color: "#666" }}>
+                        점수: {st.recommendScore}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </motion.div>
           </>
         )}
