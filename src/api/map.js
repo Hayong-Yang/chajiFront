@@ -174,6 +174,8 @@ const labelHtml = `
       iconAnchor: new window.Tmapv2.Point(50, 40),
       zIndex: 1000,
     });
+    marker.originalIcon = "html";
+    station.__marker = marker;
 
       marker.addListener("click", async () => {
         mapInstance.current.setCenter(position);

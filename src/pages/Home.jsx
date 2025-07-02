@@ -1,9 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { fetchAutocomplete, normalizeCoords, getStationMeta } from "../api/poi";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { handleZoomChange } from "../api/zoom";
+import {
+  faUser,
+  faComments,
+  faHeadset,
+  faCog,
+} from "@fortawesome/free-solid-svg-icons";
+import { getUserInfo, logoutUser } from "../api/member";
 
 import {
   setStationNear,
@@ -283,6 +290,8 @@ async function fetchStationList(filterOptions, lat, lon) {
 function AutocompleteInput({ label, value = "", onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showList, setShowList] = useState(false);
+  const [userFocused, setUserFocused] = useState(false);  //사용자가 input을 직접 선택했는지 여부
+
 
   const timeoutRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -298,7 +307,9 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
       const data = await fetchAutocomplete(value.trim());
       console.log("자동완성 결과:", data);
       setSuggestions(data);
+       if (userFocused) {
       setShowList(true);
+    }
     }, 300);
   }, [value]);
 
@@ -306,6 +317,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setShowList(false);
+         setUserFocused(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -323,6 +335,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
         autoComplete="off"
         onFocus={() => {
           if (suggestions.length > 0) setShowList(true);
+           setUserFocused(true);
         }}
         className="autocomplete-input"
       />
@@ -334,6 +347,7 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
               onClick={() => {
                 onSelect(item);
                 setShowList(false);
+                 setUserFocused(false);
                 setSuggestions([]);
               }}
               className="autocomplete-item"
@@ -350,16 +364,18 @@ function AutocompleteInput({ label, value = "", onChange, onSelect }) {
 }
 
 export default function Home() {
+  const [loading, setLoading] = useState(true); // 지도 로딩중 상태
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [memberCompany, setMemberCompany] = useState("ME");
   const memberCompanyRef = useRef("ME"); // ⬅️ 추가
+  const [userFocused, setUserFocused] = useState(false); 
 
   // 상태 추가: 리스트 보기 상태 및 충전소 리스트
   const [stations, setStations] = useState([]); // 충전소 리스트
   const [showList, setShowList] = useState(false); // 리스트 뷰 토글
   const [showDrawer, setShowDrawer] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("home"); // 선택된 메뉴
+  const [activeMenu, setActiveMenu] = useState("mypage"); // 선택된 메뉴
   const [suggestions, setSuggestions] = useState([]);
   const [query, setQuery] = useState("");
 
@@ -384,6 +400,28 @@ export default function Home() {
   const [selectedDestStation, setSelectedDestStation] = useState(null);
   const [selectedOriginStation, setSelectedOriginStation] = useState(null);
   const zoomMarkers = useRef([]);
+  const [user, setUser] = useState(null);
+  const token = useMemo(() => localStorage.getItem("accessToken"), []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    getUserInfo(token)
+      .then((res) => setUser(res))
+      .catch((err) => console.warn("사용자 정보를 불러오지 못했습니다.", err));
+  }, [token]);
+
+  const handleRegister = () => navigate("/register");
+  const handleLogin = () => navigate("/login");
+
+  const handleProtectedClick = (path) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요해요! 🐾");
+      return;
+    }
+    navigate(path);
+  };
 
   // 충전소 상태 info 접근s
   const [selectedStation, setSelectedStation] = useState(null); // ← 상태 추가
@@ -659,6 +697,10 @@ export default function Home() {
       destMarkerRef,
       memberCompanyRef
     );
+    onMapReady(); // 마커 다 그려진 후
+    setTimeout(() => {
+      setLoading(false); // 물개 퇴장!
+    }, 4000); // 단위: ms (여기선 1초)
 
     console.log("전송할 필터옵션:", filterOptions);
 
@@ -691,6 +733,7 @@ export default function Home() {
     );
     setTimeout(() => {
       onMapReady(); // mapInstance.current 확실히 존재할 시점
+      // setLoading(false); // 로딩 완료
     }, 0);
   };
 
@@ -746,6 +789,7 @@ export default function Home() {
       map.setZoom(15);
       // setOrigin(meta); // 필요 시 위치 상태 저장
     }
+    setUserFocused(false)
   };
   const handleDestSelect = (item) => {
     const meta = getStationMeta(normalizeCoords(item));
@@ -758,6 +802,7 @@ export default function Home() {
       map.setZoom(15);
     }
     // setDest(meta); // 필요 시 위치 상태 저장
+    setUserFocused(false)
   };
 
   // 스왑함수
@@ -780,7 +825,7 @@ export default function Home() {
     const newOriginMarker = new window.Tmapv2.Marker({
       position: destPos,
       map,
-      icon: "/img/logos/start.png",
+      icon: "/img/pointer/redMarker.png",
       iconSize: new window.Tmapv2.Size(36, 54),
       iconAnchor: new window.Tmapv2.Point(18, 54),
     });
@@ -789,7 +834,7 @@ export default function Home() {
     const newDestMarker = new window.Tmapv2.Marker({
       position: originPos,
       map,
-      icon: "/img/logos/end.png",
+      icon: "/img/pointer/redMarker.png",
       iconSize: new window.Tmapv2.Size(36, 54),
       iconAnchor: new window.Tmapv2.Point(18, 54),
     });
@@ -823,14 +868,25 @@ export default function Home() {
     );
 
     // === 이전 출발지 마커 복원 ===
-    if (originMarkerRef.current) {
-      if (originMarkerRef.current.originalIcon) {
-        originMarkerRef.current.setIcon(originMarkerRef.current.originalIcon);
-      } else {
-        originMarkerRef.current.setMap(null);
+if (originMarkerRef.current) {
+  const prev = originMarkerRef.current;
+    const el = prev.getElement?.();
+    if (el) {
+      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+      if (wrapper) {
+        wrapper.style.outline = "";
+        wrapper.style.borderRadius = "";
       }
-      originMarkerRef.current = null;
     }
+  if (prev.originalIcon === "html") {
+    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+  } else if (prev.originalIcon) {
+    prev.setIcon(prev.originalIcon);  // 아이콘 복원
+  } else {
+    prev.setMap(null);
+  }
+  originMarkerRef.current = null;
+}
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -850,18 +906,29 @@ export default function Home() {
     if (targetMarker) {
       // 아이콘 백업하고 출발지 아이콘으로 변경
       targetMarker.originalIcon = targetMarker.getIcon();
-      targetMarker.setIcon("/img/logos/start.png");
+      targetMarker.setIcon("/img/pointer/redMarker.png");
       originMarkerRef.current = targetMarker;
+          // ✅ HTML 기반 마커라면 강조 스타일 적용
+const el = targetMarker.getElement?.();
+if (el) {
+  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
+  if (wrapper) {
+    wrapper.style.outline = "3px solid #1976D2";
+    wrapper.style.borderRadius = "12px";
+  }
+}
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
         position,
         map: mapInstance.current,
-        icon: "/img/logos/start.png",
+        icon: "/img/pointer/redMarker.png",
         iconAnchor: new Tmapv2.Point(18, 48),
       });
+      marker.dataStatId = selectedStation.statId;
       originMarkerRef.current = marker;
     }
+
 
     // === 출발지 상태 반영 ===
     setOriginInput(
@@ -870,6 +937,8 @@ export default function Home() {
         selectedStation.addr ||
         ""
     );
+ 
+   setSelectedStation(null); 
     setMode("route");
   };
   const handleSetDest = () => {
@@ -899,13 +968,25 @@ export default function Home() {
 
     // === 이전 출발지 마커 복원 ===
     if (destMarkerRef.current) {
-      if (destMarkerRef.current.destIcon) {
-        destMarkerRef.current.setIcon(destMarkerRef.current.destIcon);
-      } else {
-        originMarkerRef.current.setMap(null);
+  const prev = destMarkerRef.current;
+    const el = prev.getElement?.();
+    if (el) {
+      const wrapper = el.querySelector("div"); // 정확한 내부 요소 선택
+      if (wrapper) {
+        wrapper.style.outline = "";
+        wrapper.style.borderRadius = "";
       }
-      destMarkerRef.current = null;
     }
+  if (prev.destlIcon === "html") {
+    prev.setMap(mapInstance.current); // 다시 지도에 붙이기
+  } else if (prev.destlIcon) {
+    prev.setIcon(prev.destIcon);  // 아이콘 복원
+  } else {
+    prev.setMap(null);
+  }
+  destMarkerRef.current = null;
+}
+
 
     // === markersRef 또는 centerMarkerRef에서 해당 마커 찾기 ===
     let targetMarker = null;
@@ -925,16 +1006,25 @@ export default function Home() {
     if (targetMarker) {
       // 아이콘 백업하고 출발지 아이콘으로 변경
       targetMarker.destIcon = targetMarker.getIcon();
-      targetMarker.setIcon("/img/logos/end.png");
+      targetMarker.setIcon("/img/pointer/redMarker.png");
       destMarkerRef.current = targetMarker;
+      const el = targetMarker.getElement?.();
+if (el) {
+  const wrapper = el.querySelector("div");  // 가장 바깥 div 선택
+  if (wrapper) {
+    wrapper.style.outline = "3px solid #1976D2";
+    wrapper.style.borderRadius = "12px";
+  }
+}
     } else {
       // 마커가 없으면 새로 생성
       const marker = new window.Tmapv2.Marker({
         position,
         map: mapInstance.current,
-        icon: "/img/logos/end.png",
+        icon: "/img/pointer/redMarker.png",
         iconAnchor: new Tmapv2.Point(18, 48),
       });
+      marker.dataStatId = selectedStation.statId;
       destMarkerRef.current = marker;
     }
 
@@ -945,6 +1035,7 @@ export default function Home() {
         selectedStation.addr ||
         ""
     );
+    setSelectedStation(null); 
     setMode("route");
   };
 
@@ -1157,6 +1248,18 @@ export default function Home() {
   // 화면 부분
   return (
     <div style={{ position: "relative" }}>
+      {loading && (
+        <div className="splash-screen">
+          <img
+            src="/img/seal-driver.png"
+            alt="차지차지 시작!"
+            className="seal-icon"
+          />
+          <h1 className="splash-title">차지차지!</h1>
+          <p className="splash-subtitle">전기차 라이프의 시작을 함께해요 ⚡</p>
+        </div>
+      )}
+
       {/* ─── 검색/경로 입력창 (지도 위 고정) ─── */}
       <div
         className="search-fixed-container"
@@ -2777,40 +2880,99 @@ export default function Home() {
                   alt="프로필"
                   className="profile-image"
                 />
-                <div className="login-links">회원가입 | 로그인</div>
+                <div className="login-links">
+                  {user ? (
+                    <div className="user-info-row">
+                      <div className="user-name">{user.userName} 님</div>
+                      <button
+                        className="logout-button"
+                        onClick={() => {
+                          localStorage.removeItem("accessToken");
+                          setUser(null);
+                          window.location.reload();
+                        }}
+                      >
+                        로그아웃
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="login-buttons-row">
+                        <button
+                          className="login-button"
+                          onClick={handleRegister}
+                        >
+                          회원가입
+                        </button>
+                        <span className="divider">|</span>
+                        <button className="login-button" onClick={handleLogin}>
+                          로그인
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="drawer-welcome">
-                차지차지와 함께 행복한 하루 보내세요!
-              </div>
+              <div className="drawer-welcome">오늘도 차지차지와 함께 😊</div>
 
               {/* 하단: 아이콘 + 메뉴 텍스트 2열 */}
               <div className="drawer-body">
                 <div className="icon-column">
                   <div onClick={() => setActiveMenu("mypage")}>
-                    <img src="/img/icon-profile.png" alt="마이페이지" />
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className={`menu-icon ${
+                        activeMenu === "mypage" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("community")}>
-                    <img src="/img/icon-community.png" alt="커뮤니티" />
+                    <FontAwesomeIcon
+                      icon={faComments}
+                      className={`menu-icon ${
+                        activeMenu === "community" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("support")}>
-                    <img src="/img/icon-support.png" alt="고객센터" />
+                    <FontAwesomeIcon
+                      icon={faHeadset}
+                      className={`menu-icon ${
+                        activeMenu === "support" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                   <div onClick={() => setActiveMenu("settings")}>
-                    <img src="/img/icon-settings.png" alt="설정" />
+                    <FontAwesomeIcon
+                      icon={faCog}
+                      className={`menu-icon ${
+                        activeMenu === "settings" ? "active-icon" : ""
+                      }`}
+                    />
                   </div>
                 </div>
 
                 <div className="text-column">
                   {activeMenu === "mypage" && (
                     <div className="text-list">
-                      <div className="text-item">내 활동</div>
+                      <div
+                        className="text-item"
+                        onClick={() => handleProtectedClick("/mypage")}
+                      >
+                        MyPage
+                      </div>
                       <div className="text-item">내가 쓴 글 보기</div>
                       <div className="text-item">충전소 제보 내역</div>
                     </div>
                   )}
                   {activeMenu === "community" && (
                     <div className="text-list">
-                      <div className="text-item">자유게시판</div>
+                      <div
+                        className="text-item"
+                        onClick={() => navigate("/community")}
+                      >
+                        커뮤니티
+                      </div>
                       <div className="text-item">정보공유</div>
                     </div>
                   )}
@@ -2831,6 +2993,7 @@ export default function Home() {
             </div>
           </>
         )}
+
         <button
           className="current-location-button"
           onClick={moveToCurrentLocation}
@@ -2880,7 +3043,7 @@ export default function Home() {
               color: "#222",
               cursor: "pointer",
             }}
-            onClick={() => setActiveMenu("community")}
+            onClick={() => navigate("/community")}
           >
             <span style={{ fontSize: 22, marginBottom: 2 }}>💬</span>
             커뮤니티
