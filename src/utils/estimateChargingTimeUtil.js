@@ -26,3 +26,24 @@ export function estimateChargingTime(
 
   return Math.round(timeInMinutes); // 분 단위
 }
+
+/**
+ * 도착 후 충전 결과 배터리 퍼센트 계산
+ * @param {number} arrivalPercent - 도착 시 배터리 퍼센트 (%)
+ * @param {number} chargingSpeedKw - 충전 속도 (kW)
+ * @param {number} chargingMinutes - 충전 시간 (분)
+ * @param {number} batteryCapacityKwh - 배터리 총 용량 (kWh)
+ * @returns {number} 충전 후 예상 배터리 퍼센트 (최대 100%)
+ */
+export function estimatePostChargeBattery(
+  arrivalPercent,
+  chargingSpeedKw,
+  chargingMinutes,
+  batteryCapacityKwh
+) {
+  const chargedKwh = (chargingSpeedKw * chargingMinutes) / 60;
+  const chargedPercent = (chargedKwh / batteryCapacityKwh) * 100;
+  const finalPercent = arrivalPercent + chargedPercent;
+
+  return Math.min(finalPercent, 100); // 100% 초과 방지
+}

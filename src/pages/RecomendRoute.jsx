@@ -11,6 +11,7 @@ import { calculateRoadWeightByVehicle } from "../utils/roadWeightUtil";
 import {
   estimateArrivalBattery,
   estimateChargingTime,
+  estimatePostChargeBattery,
 } from "../utils/estimateChargingTimeUtil";
 
 export default function RecommendRoute() {
@@ -645,6 +646,8 @@ export default function RecommendRoute() {
       total: s.totalCount ?? null, // "
       arrivalPercent: s.arrivalPercent ?? null,
       chargingTime: s.chargingTime != null ? `${s.chargingTime}분` : null,
+      chargedPercent:
+        s.chargedBatteryPercent != null ? `${s.chargedBatteryPercent}%` : null,
       secondHop: s.secondHop?.statNm ?? null,
       secondHopTime:
         s.secondHopTime != null
@@ -744,12 +747,20 @@ export default function RecommendRoute() {
         chargingSpeed
       );
 
+      const chargedBatteryPercent = estimatePostChargeBattery(
+        arrivalPercent,
+        chargingSpeed, // items[0]?.output 또는 50
+        chargingTime, // 위에서 방금 구한 값 (분)
+        batteryCapacity // batteryInfo.capacity
+      );
+
       return {
         availableCount,
         totalCount,
         chargers: items, // 👈 상세 충전기 정보들 전부 반환
         arrivalPercent: arrivalPercent.toFixed(1),
         chargingTime, // 분 단위
+        chargedBatteryPercent: chargedBatteryPercent.toFixed(1),
       };
     } catch (err) {
       console.error(`⚠️ 상태 가져오기 실패: ${statId}`, err);
@@ -1141,7 +1152,7 @@ export default function RecommendRoute() {
             >
               <div
                 className="station-card-title"
-                style={{ fontWeight: 700, fontSize: 18, marginBottom: 2 }}
+                style={{ fontWeight: 700, fontSize: 17, marginBottom: 2 }}
               >
                 {card.name}
               </div>
@@ -1153,25 +1164,25 @@ export default function RecommendRoute() {
                   marginBottom: 2,
                 }}
               >
-                <span style={{ fontWeight: 800, fontSize: 22, color: "#222" }}>
-                  {card.totalTime}
+                <span style={{ fontWeight: 600, fontSize: 18, color: "#222" }}>
+                  총: {card.totalTime}
                 </span>
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 11,
                     color: "#1976d2",
                     fontWeight: 600,
                     marginLeft: 8,
                   }}
                 >
-                  {card.detour}
+                  우회: {card.detour}
                 </span>
               </div>
               <div
                 style={{
                   display: "flex",
                   gap: 10,
-                  fontSize: 15,
+                  fontSize: 14,
                   color: "#444",
                   marginBottom: 2,
                 }}
@@ -1191,7 +1202,7 @@ export default function RecommendRoute() {
               >
                 <span>충전예상 {card.chargingTime}</span>
                 <span>·</span>
-                <span>충전후 {card.arrivalPercent}%</span>
+                <span>충전후 {card.chargedPercent}%</span>
               </div>
               <div
                 style={{
