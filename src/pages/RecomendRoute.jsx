@@ -11,6 +11,7 @@ import { calculateRoadWeightByVehicle } from "../utils/roadWeightUtil";
 import {
   estimateArrivalBattery,
   estimateChargingTime,
+  estimatePostChargeBattery,
 } from "../utils/estimateChargingTimeUtil";
 
 export default function RecommendRoute() {
@@ -613,12 +614,12 @@ export default function RecommendRoute() {
     }
 
     // 8. ui 부분 마커 표시
-    const defaultSize = new Tmapv2.Size(32, 32);
+    const defaultSize = new Tmapv2.Size(48, 48);
 
     const newMarkers = finalStations.map((station) => {
       const marker = new Tmapv2.Marker({
         position: new Tmapv2.LatLng(station.lat, station.lng),
-        icon: "/img/logos/default.png",
+        icon: "/img/pointer/redMarker.png",
         iconSize: defaultSize,
         title: station.statNm,
         map: mapRef.current,
@@ -645,6 +646,8 @@ export default function RecommendRoute() {
       total: s.totalCount ?? null, // "
       arrivalPercent: s.arrivalPercent ?? null,
       chargingTime: s.chargingTime != null ? `${s.chargingTime}분` : null,
+      chargedPercent:
+        s.chargedBatteryPercent != null ? `${s.chargedBatteryPercent}%` : null,
       secondHop: s.secondHop?.statNm ?? null,
       secondHopTime:
         s.secondHopTime != null
@@ -744,12 +747,20 @@ export default function RecommendRoute() {
         chargingSpeed
       );
 
+      const chargedBatteryPercent = estimatePostChargeBattery(
+        arrivalPercent,
+        chargingSpeed, // items[0]?.output 또는 50
+        chargingTime, // 위에서 방금 구한 값 (분)
+        batteryCapacity // batteryInfo.capacity
+      );
+
       return {
         availableCount,
         totalCount,
         chargers: items, // 👈 상세 충전기 정보들 전부 반환
         arrivalPercent: arrivalPercent.toFixed(1),
         chargingTime, // 분 단위
+        chargedBatteryPercent: chargedBatteryPercent.toFixed(1),
       };
     } catch (err) {
       console.error(`⚠️ 상태 가져오기 실패: ${statId}`, err);
@@ -1139,18 +1150,68 @@ export default function RecommendRoute() {
                 }
               }}
             >
-              <div className="station-card-title">{card.name}</div>
-              <div className="station-card-info">
-                <span>총 소요 시간: {card.totalTime}</span>
-                <span>우회 시간: {card.detour}</span>
-                <span>{card.distance}</span>
-                <span>{card.fare}</span>
-                <span>
-                  충전 예상시간: {card.chargingTime} / 충전 후:
-                  {card.arrivalPercent}
+              <div
+                className="station-card-title"
+                style={{ fontWeight: 700, fontSize: 17, marginBottom: 2 }}
+              >
+                {card.name}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  marginBottom: 2,
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 18, color: "#222" }}>
+                  총: {card.totalTime}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "#1976d2",
+                    fontWeight: 600,
+                    marginLeft: 8,
+                  }}
+                >
+                  우회: {card.detour}
                 </span>
               </div>
-              <div className="station-card-charger">
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  fontSize: 14,
+                  color: "#444",
+                  marginBottom: 2,
+                }}
+              >
+                <span>{card.distance}</span>
+                <span>·</span>
+                <span>{card.fare}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  fontSize: 14,
+                  color: "#666",
+                  marginBottom: 2,
+                }}
+              >
+                <span>충전예상 {card.chargingTime}</span>
+                <span>·</span>
+                <span>충전후 {card.chargedPercent}%</span>
+              </div>
+              <div
+                style={{
+                  fontSize: 15,
+                  color: "#1976d2",
+                  fontWeight: 600,
+                  marginBottom: 2,
+                }}
+              >
                 {card.total === null
                   ? "🔌 충전기 정보 없음"
                   : `🔌 사용가능 ${card.available} / ${card.total}`}

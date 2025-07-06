@@ -1,9 +1,9 @@
 // 최적 온도 범위 및 감쇠 계수
 const OPTIMAL_TEMP_MIN = 18.0;
 const OPTIMAL_TEMP_MAX = 22.0;
-const ALPHA_WINTER = 0.02;
+const ALPHA_WINTER = 0.015;
 const ALPHA_SUMMER = 0.01;
-const BETA = 2;
+const BETA = 1.5;
 
 // 월별 평균 기온 (서울)
 const monthlyAvgTemps = [

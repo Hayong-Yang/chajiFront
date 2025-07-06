@@ -24,7 +24,6 @@ function clearMarkers(markers) {
     });
 }
 
-
 export async function handleZoomChange(
   mapInstance,
   markersRef,
@@ -46,17 +45,26 @@ export async function handleZoomChange(
   const lng = center.lng();
   const requestId = ++currentRequestId;
 
+  clearMarkers(detailedMarkers);
+  detailedMarkers = [];
+  clearMarkers(summaryZscodeMarkers);
+  summaryZscodeMarkers = [];
+  clearMarkers(summaryZcodeMarkers);
+  summaryZcodeMarkers = [];
+
   if (zoom >= 14) {
     console.log("🔎 상세 마커 표시 (zoom >= 14)");
-    clearMarkers(summaryZscodeMarkers);
-    summaryZscodeMarkers = [];
-    clearMarkers(summaryZcodeMarkers);
-    summaryZcodeMarkers = [];
 
     await getStationNear(
-      lat, lng, mapInstance, markersRef,
-      setSelectedStation, filterOptionsRef.current,
-      originMarkerRef, destMarkerRef, memberCompanyRef
+      lat,
+      lng,
+      mapInstance,
+      markersRef,
+      setSelectedStation,
+      filterOptionsRef.current,
+      originMarkerRef,
+      destMarkerRef,
+      memberCompanyRef
     );
 
     if (requestId !== currentRequestId) return;
@@ -64,45 +72,37 @@ export async function handleZoomChange(
     detailedMarkers = (markersRef.current || [])
       .map((entry) => entry.marker)
       .filter(Boolean);
-  }
-
-  else if (zoom >= 11 && zoom <= 13) {
+  } else if (zoom >= 11 && zoom <= 13) {
     console.log("📍 Zscode 요약 마커 표시 (zoom 11~13)");
-    clearMarkers(detailedMarkers);
-    detailedMarkers = [];
-    clearMarkers(summaryZcodeMarkers);
-    summaryZcodeMarkers = [];
 
     const response = await axios.get("/api/zoom", {
-      params: { lat, lng, zoomLevel: zoom }
+      params: { lat, lng, zoomLevel: zoom },
     });
     if (requestId !== currentRequestId) return;
 
     const summaryData = response.data;
     if (!Array.isArray(summaryData)) return;
 
-    summaryZscodeMarkers = summaryData.map(createLabelMarker(map)).filter(Boolean);
-  }
-
-  else if (zoom <= 10) {
+    summaryZscodeMarkers = summaryData
+      .map(createLabelMarker(map))
+      .filter(Boolean);
+  } else if (zoom <= 10) {
     console.log("📍 Zcode 요약 마커 표시 (zoom <= 10)");
-    clearMarkers(detailedMarkers);
-    detailedMarkers = [];
-    clearMarkers(summaryZscodeMarkers);
-    summaryZscodeMarkers = [];
 
     const response = await axios.get("/api/zoom", {
-      params: { lat, lng, zoomLevel: zoom }
+      params: { lat, lng, zoomLevel: zoom },
     });
     if (requestId !== currentRequestId) return;
 
     const summaryData = response.data;
     if (!Array.isArray(summaryData)) return;
 
-    summaryZcodeMarkers = summaryData.map(createLabelMarker(map)).filter(Boolean);
+    summaryZcodeMarkers = summaryData
+      .map(createLabelMarker(map))
+      .filter(Boolean);
   }
   console.log("🔍 요약 Zscode 마커 생성 수:", summaryZscodeMarkers.length);
-console.log("🔍 요약 Zcode 마커 생성 수:", summaryZcodeMarkers.length);
+  console.log("🔍 요약 Zcode 마커 생성 수:", summaryZcodeMarkers.length);
 }
 
 function createLabelMarker(map) {
@@ -115,19 +115,28 @@ function createLabelMarker(map) {
     if (!lat || !lng || lng === 0) return null;
 
     const position = new window.Tmapv2.LatLng(lat, lng);
+    const size = Math.min(80, Math.max(40, Math.sqrt(count) * 0.6));
+    const fontSize = size * 0.28;
+    const lineHeight = fontSize * 1.2;
     const labelHtml = `
       <div style="
-        background: white;
-        border: 2px solid red;
-        border-radius: 16px;
-        padding: 4px 8px;
-        font-size: 13px;
-        font-weight: bold;
-        color: red;
-        white-space: nowrap;
-        box-shadow: 2px 2px 3px rgba(0,0,0,0.3);
+        background: rgba(9, 121, 234, 0.62);
+    width: ${size * 2}px;
+    height: ${size * 2}px;
+    border-radius: 50%;
+    /* border: 2px solid rgb(186, 211, 236); */ /* 테두리 제거 or 필요시 사용 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: ${fontSize}px;
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.3);
       ">
-        ${name}<br/>(${count}개)
+     <div style="line-height: 1;">${name}</div>
+    <div style="line-height: 1;">(${count}개)</div>
       </div>
     `;
 

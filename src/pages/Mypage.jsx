@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { getUserInfo, logoutUser } from "../api/member";
 import { getMyCars } from "../api/memberCar";
+import { deleteMyCar } from "../api/memberCar";
 import { useNavigate, Link } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import "./Mypage.css";
@@ -26,6 +27,21 @@ export default function Mypage() {
     await logoutUser(token);
     localStorage.removeItem("accessToken");
     navigate("/login");
+  };
+
+  const handleDeleteCar = async (carIdx) => {
+    const confirm = window.confirm("정말 이 차량을 삭제하시겠습니까?");
+    if (!confirm) return;
+
+    try {
+      await deleteMyCar(carIdx, token);
+      alert("차량이 삭제되었습니다.");
+      // 새로고침 없이 목록 갱신
+      setCars((prev) => prev.filter((c) => c.idx !== carIdx));
+    } catch (error) {
+      console.error("❌ 차량 삭제 실패:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleEditProfile = () => navigate("/editprofile");
@@ -85,6 +101,12 @@ export default function Mypage() {
               </p>
               {car.isMain && <span className="main-badge">대표 차량</span>}
             </div>
+            <button
+              className="delete-car-btn"
+              onClick={() => handleDeleteCar(car.idx)}
+            >
+              삭제
+            </button>
           </div>
         ))
       ) : (

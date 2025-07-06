@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import CarRegister from "./pages/CarRegister";
 import Mypage from "./pages/Mypage";
 import EditProfile from "./pages/EditProfile";
+import FavoriteList from "./pages/FavoriteList";
+import Community from "./pages/Community";
 
 export default function App() {
     return (
@@ -23,9 +25,10 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/carRegister" element={<CarRegister />} />
-            <Route path="/favorite/list" element={<FavoriteList />} />
             <Route path="/mypage" element={<Mypage />} />
             <Route path="/editprofile" element={<EditProfile />} />
+            <Route path="/favorite" element={<FavoriteList />} />
+            <Route path="/community" element={<Community />} />
         </Routes>
     );
 }
