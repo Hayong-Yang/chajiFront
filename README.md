@@ -20,7 +20,6 @@ UI/UX 중심으로 지도, 필터, 검색, 즐겨찾기, 마이페이지(내 차
 ## 🏗️ Tech Stack
 - **React 18 + Vite**
 - React Router, Fetch/Axios
-- (선택) Zustand/Redux, Framer Motion, FontAwesome 등
 
 ---
 
