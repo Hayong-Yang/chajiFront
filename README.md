@@ -1,12 +1,34 @@
-# React + Vite
+# 차지차지 (ChajiChaji) — EV 충전소 맞춤 추천 · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+전기차 충전소를 **실질 전비, 가격, 충전 속도/타입, 사업자** 기준으로 한눈에 비교하고 추천해주는 서비스의 프론트엔드입니다.  
+UI/UX 중심으로 지도, 필터, 검색, 즐겨찾기, 마이페이지(내 차 등록)까지 제공합니다.
 
-Currently, two official plugins are available:
+[발표자료(PDF)](./docs/발표자료.pdf)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## ✨ 주요 기능 (Features)
+- **지도 & 마커**: TMAP 기반 지도, 충전소 마커 표시, 마커 클릭 시 상세 패널(슬라이드 업)
+- **스마트 추천**: 내 위치/경로/차량 전비를 반영한 충전소 추천 리스트
+- **강력한 필터**: 사업자, 충전 속도(kW), 커넥터 타입, 가격(회원/비회원) 등
+- **검색 & 연관검색어**: 키워드 검색, 연관 키워드 제안
+- **즐겨찾기**: 관심 충전소 저장/해제
+- **계정/마이페이지**: 로그인/회원가입(JWT 연동), **내 차 등록** 및 전비 기반 추천 반영
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🏗️ Tech Stack
+- **React 18 + Vite**
+- React Router, Fetch/Axios
+- (선택) Zustand/Redux, Framer Motion, FontAwesome 등
+
+---
+
+## 👥 팀 구성 & 역할
+- 고현서: 사용자 필터, 가격 정보, 추천 리스트
+- 김동현: 검색/연관검색어, 마커 UX
+- 김혜진: 전비 모델, 전기차 DB, 내 차 등록
+- 양하용: 충전소 호출, 경로 상 추천
+
+---
+
